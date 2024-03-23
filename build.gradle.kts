@@ -2,8 +2,8 @@ plugins {
     kotlin("jvm") version "1.9.22"
 }
 
-group = "ai.sunnystratgies"
-version = "1.0-SNAPSHOT"
+group = "com.github.mikedepies"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
