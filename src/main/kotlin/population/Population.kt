@@ -1,4 +1,6 @@
-package com.github.mikedepies
+package com.github.mikedepies.population
+
+import genome.NetworkGenome
 
 data class Population(
     val genomes: MutableList<NetworkGenome>,

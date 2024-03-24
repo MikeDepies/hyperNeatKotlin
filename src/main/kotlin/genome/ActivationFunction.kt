@@ -1,7 +1,7 @@
-package com.github.mikedepies
+package genome
 
 enum class ActivationFunction {
     SIGMOID,
     TANH,
-    RELU
+    RELU,
 }

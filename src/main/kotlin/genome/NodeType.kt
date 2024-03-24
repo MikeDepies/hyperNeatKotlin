@@ -1,4 +1,4 @@
-package com.github.mikedepies
+package genome
 
 enum class NodeType {
     INPUT,
