@@ -2,7 +2,12 @@ package algorithm.network
 
 import genome.*
 
-class Node(val id: Int, val type: NodeType, var activationFunction: (Double) -> Double, var bias: Double) {
+class Node(
+        val id: Int,
+        val type: NodeType,
+        var activationFunction: (Double) -> Double,
+        var bias: Double
+) {
     var inputValue: Double = 0.0
     var outputValue: Double = 0.0
 
@@ -11,44 +16,73 @@ class Node(val id: Int, val type: NodeType, var activationFunction: (Double) -> 
     }
 }
 
-class Network(val nodes: MutableList<Node> = mutableListOf(), val connections: MutableList<Pair<Int, Int>> = mutableListOf())
+data class Connection(val inputNodeId: Int, val outputNodeId: Int, val weight: Double)
 
-fun buildNetworkFromGenome(genome: NetworkGenome): Network {
-    val network = Network()
-    genome.nodeGenomes.forEach { nodeGenome ->
-        val activationFunction = when (nodeGenome.activationFunction) {
-            ActivationFunction.SIGMOID -> { x: Double -> 1 / (1 + Math.exp(-x)) }
-            // Add other activation functions here
-            else -> { x: Double -> x } // Default to identity function
-        }
-        network.nodes.add(Node(nodeGenome.id, nodeGenome.type, activationFunction, nodeGenome.bias))
+class Network(val nodes: List<Node>, val connections: List<Connection>)
+class DefaultActivationFunctionMapper : ActivationFunctionMapper {
+    override fun map(activationFunction: ActivationFunction): (Double) -> Double = when (activationFunction) {
+        ActivationFunction.IDENTITY -> { x -> x }
+        ActivationFunction.SIGMOID -> { x -> 1 / (1 + Math.exp(-x)) }
+        ActivationFunction.TANH -> { x -> Math.tanh(x) }
+        ActivationFunction.RELU -> { x -> Math.max(0.0, x) }
     }
-    genome.connectionGenes.filter { it.enabled }.forEach { connectionGene ->
-        network.connections.add(Pair(connectionGene.inputNode.id, connectionGene.outputNode.id))
-    }
-    return network
 }
-fun Network.feedforward(inputValues: List<Double>): List<Double> {
-    // Reset node input values
-    nodes.forEach { it.inputValue = 0.0 }
 
-    // Assign input values to input nodes
-    val inputNodes = nodes.filter { it.type == NodeType.INPUT }
-    inputValues.forEachIndexed { index, value ->
-        inputNodes[index].inputValue = value
-    }
-
-    // Activate nodes in order: INPUT -> HIDDEN -> OUTPUT
-    val sortedNodes = nodes.sortedBy { it.type }
-    sortedNodes.forEach { node ->
-        // Sum inputs from connections
-        connections.filter { it.second == node.id }.forEach { connection ->
-            val inputNode = nodes.find { it.id == connection.first }!!
-            node.inputValue += inputNode.outputValue
-        }
-        node.activate()
-    }
-
-    // Collect and return output values
-    return nodes.filter { it.type == NodeType.OUTPUT }.map { it.outputValue }
+interface ActivationFunctionMapper {
+    fun map(activationFunction: ActivationFunction): (Double) -> Double
 }
+
+class NetworkBuilder(private val activationFunctionMapper: ActivationFunctionMapper) {
+
+    fun buildNetworkFromGenome(genome: NetworkGenome): Network {
+        val nodes = genome.nodeGenomes.map { nodeGenome ->
+            val activationFunction = activationFunctionMapper.map(nodeGenome.activationFunction)
+            Node(nodeGenome.id, nodeGenome.type, activationFunction, nodeGenome.bias)
+        }
+
+        val connections = genome.connectionGenes
+            .filter { it.enabled }
+            .map { Connection(it.inputNode.id, it.outputNode.id, it.weight) }
+
+        return Network(nodes, connections)
+    }
+}
+
+class NetworkProcessor(private val network: Network) {
+    val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
+
+    fun feedforward(inputValues: List<Double>): List<Double> {
+        network.nodes.forEach { it.inputValue = 0.0 } // Reset node input values
+
+        // Efficiently assign input values to input nodes
+        network.nodes.filter { it.type == NodeType.INPUT }.take(inputValues.size).forEachIndexed {
+                index,
+                node ->
+            node.inputValue = inputValues[index]
+        }
+
+        // Preprocess connections to map output node IDs to their input connections
+        val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
+
+        // Process nodes in order of their types
+        network.nodes.sortedBy { it.type.ordinal }.forEach { node ->
+            inputConnectionsByOutputNodeId[node.id]?.forEach { connection ->
+                network.nodes.find { it.id == connection.inputNodeId }?.let { inputNode ->
+                    node.inputValue += inputNode.outputValue * connection.weight
+                }
+            }
+            node.activate()
+        }
+
+        // Select for output nodes once, and then use that for each output of the feedforward
+
+        return outputNodes.map { it.outputValue }
+    }
+}
+
+class NetworkProcessorFactory(val networkBuilder: NetworkBuilder) {
+    fun createProcessor(genome: NetworkGenome): NetworkProcessor {
+        return NetworkProcessor(networkBuilder.buildNetworkFromGenome(genome))
+    }
+}
+
