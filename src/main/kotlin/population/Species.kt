@@ -1,4 +1,4 @@
-package com.github.mikedepies.population
+package population
 
 import genome.NetworkGenome
 
