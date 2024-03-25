@@ -2,6 +2,13 @@ package algorithm.crossover
 
 import genome.NetworkGenome
 import kotlin.random.Random
+fun <T> selectGene(group: List<T>, parent1Genes: List<T>, parent2Genes: List<T>, random: Random, biasTowardsParent1: Double): T {
+    return if (group.size == 1) group.first()
+    else {
+        if (random.nextDouble() < biasTowardsParent1) group.first { it in parent1Genes }
+        else group.first { it in parent2Genes }
+    }
+}
 
 fun biasedCrossover(
     parent1: NetworkGenome,
@@ -9,31 +16,16 @@ fun biasedCrossover(
     random: Random,
     biasTowardsParent1: Double = 0.75
 ): NetworkGenome {
-    // Assuming both parents have the same set of node IDs but possibly with different attributes
-    val childNodes =
-            (parent1.nodeGenomes + parent2.nodeGenomes).groupBy { it.id }.values.map { group ->
-                if (group.size == 1) group.first()
-                else {
-                    // Bias towards parent1
-                    if (random.nextDouble() < biasTowardsParent1)
-                            group.first { it in parent1.nodeGenomes }
-                    else group.first { it in parent2.nodeGenomes }
-                }
-            }
+    val childNodes = (parent1.nodeGenomes + parent2.nodeGenomes)
+        .groupBy { it.id }
+        .values
+        .map { group -> selectGene(group, parent1.nodeGenomes, parent2.nodeGenomes, random, biasTowardsParent1) }
 
-    val childConnectionGenes =
-            (parent1.connectionGenes + parent2.connectionGenes).groupBy { it.id }.values.map { group
-                ->
-                if (group.size == 1) group.first()
-                else {
-                    // Bias towards parent1
-                    if (random.nextDouble() < biasTowardsParent1)
-                            group.first { it in parent1.connectionGenes }
-                    else group.first { it in parent2.connectionGenes }
-                }
-            }
+    val childConnectionGenes = (parent1.connectionGenes + parent2.connectionGenes)
+        .groupBy { it.id }
+        .values
+        .map { group -> selectGene(group, parent1.connectionGenes, parent2.connectionGenes, random, biasTowardsParent1) }
 
-    // Construct and return the new child NetworkGenome
     return NetworkGenome(childNodes, childConnectionGenes)
 }
 
