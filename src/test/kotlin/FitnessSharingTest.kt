@@ -12,7 +12,7 @@ class FitnessSharingTest : BehaviorSpec({
             NetworkGenome(emptyList(), emptyList(), fitness = 100.0),
             NetworkGenome(emptyList(), emptyList(), fitness = 200.0)
         )
-        val species = Species(1, initialGenomes, initialGenomes.first(), 0.0)
+        val species = Species(1, initialGenomes, initialGenomes.first())
         `when`("shareFitnessWithinSpecies is invoked") {
            val fitnessSharing = FitnessSharingAverage()
            fitnessSharing.shareFitnessWithinSpecies(species)
@@ -25,7 +25,7 @@ class FitnessSharingTest : BehaviorSpec({
         
         `when`("the species has no genomes") {
             val emptyGenomes = mutableListOf<NetworkGenome>()
-            val speciesWithNoGenomes = Species(2, emptyGenomes, NetworkGenome(emptyList(), emptyList()), 0.0)
+            val speciesWithNoGenomes = Species(2, emptyGenomes, NetworkGenome(emptyList(), emptyList()))
             val fitnessSharing = FitnessSharingAverage()
             then("it should handle the species without throwing exceptions") {
                 shouldNotThrowAny {
@@ -39,7 +39,7 @@ class FitnessSharingTest : BehaviorSpec({
                 NetworkGenome(emptyList(), emptyList(), fitness = -100.0),
                 NetworkGenome(emptyList(), emptyList(), fitness = 200.0)
             )
-            val speciesWithNegativeFitness = Species(3, genomesWithNegativeFitness, genomesWithNegativeFitness.first(), 0.0)
+            val speciesWithNegativeFitness = Species(3, genomesWithNegativeFitness, genomesWithNegativeFitness.first())
             val fitnessSharing = FitnessSharingAverage()
             fitnessSharing.shareFitnessWithinSpecies(speciesWithNegativeFitness)
             then("it should correctly share fitness among genomes") {
@@ -51,10 +51,10 @@ class FitnessSharingTest : BehaviorSpec({
             val largeNumberOfGenomes = MutableList(1000) { 
                 NetworkGenome(emptyList(), emptyList(), fitness = (it + 1).toDouble()) 
             }
-            val speciesWithLargeNumberOfGenomes = Species(4, largeNumberOfGenomes, largeNumberOfGenomes.first(), 0.0)
+            val speciesWithLargeNumberOfGenomes = Species(4, largeNumberOfGenomes, largeNumberOfGenomes.first())
             val fitnessSharing = FitnessSharingAverage()
             fitnessSharing.shareFitnessWithinSpecies(speciesWithLargeNumberOfGenomes)
-            then("it should efficiently share fitness within the species") {
+            then("it should properly share fitness within the species") {
                 speciesWithLargeNumberOfGenomes.members.forEachIndexed { index, genome ->
                     genome.sharedFitness shouldBe (index + 1).toDouble() / 1000
                 }
@@ -65,7 +65,7 @@ class FitnessSharingTest : BehaviorSpec({
                 NetworkGenome(emptyList(), emptyList(), fitness = 0.0),
                 NetworkGenome(emptyList(), emptyList(), fitness = 200.0)
             )
-            val speciesWithZeroFitness = Species(5, genomesWithZeroFitness, genomesWithZeroFitness.first(), 0.0)
+            val speciesWithZeroFitness = Species(5, genomesWithZeroFitness, genomesWithZeroFitness.first())
             val fitnessSharing = FitnessSharingAverage()
             fitnessSharing.shareFitnessWithinSpecies(speciesWithZeroFitness)
             then("it should correctly handle zero fitness values without errors") {
@@ -75,8 +75,8 @@ class FitnessSharingTest : BehaviorSpec({
         }
         `when`("fitness sharing is applied across multiple species") {
             val speciesList = listOf(
-                Species(1, mutableListOf(NetworkGenome(emptyList(), emptyList(), fitness = 100.0)), NetworkGenome(emptyList(), emptyList()), 0.0),
-                Species(2, mutableListOf(NetworkGenome(emptyList(), emptyList(), fitness = 200.0)), NetworkGenome(emptyList(), emptyList()), 0.0)
+                Species(1, mutableListOf(NetworkGenome(emptyList(), emptyList(), fitness = 100.0)), NetworkGenome(emptyList(), emptyList())),
+                Species(2, mutableListOf(NetworkGenome(emptyList(), emptyList(), fitness = 200.0)), NetworkGenome(emptyList(), emptyList()))
             )
             val fitnessSharing = FitnessSharingAverage()
             speciesList.forEach { species ->
@@ -92,7 +92,7 @@ class FitnessSharingTest : BehaviorSpec({
                 NetworkGenome(emptyList(), emptyList(), fitness = 100.0),
                 NetworkGenome(emptyList(), emptyList(), fitness = 200.0)
             )
-            val species = Species(6, genomes, genomes.first(), 0.0)
+            val species = Species(6, genomes, genomes.first())
             val fitnessSharing = FitnessSharingAverage()
             // First calculation
             fitnessSharing.shareFitnessWithinSpecies(species)
