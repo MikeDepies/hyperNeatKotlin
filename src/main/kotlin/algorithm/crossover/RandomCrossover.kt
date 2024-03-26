@@ -13,12 +13,12 @@ fun randomCrossover(parent1: NetworkGenome, parent2: NetworkGenome, random: Rand
     // Assuming both parents have the same set of node IDs but possibly with different attributes
     val childNodes =
             (parent1.nodeGenomes + parent2.nodeGenomes).groupBy { it.id }.values.map {
-                if (it.size == 1) it.first() else it.random(random)
+                if (it.size == 1) it.first().copy() else it.random(random).copy()
             }
 
     val childConnectionGenes =
             (parent1.connectionGenes + parent2.connectionGenes).groupBy { it.id }.values.map {
-                if (it.size == 1) it.first() else it.random(random)
+                if (it.size == 1) it.first().copy() else it.random(random).copy()
             }
 
     // Construct and return the new child NetworkGenome

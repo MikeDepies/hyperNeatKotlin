@@ -61,7 +61,7 @@ class NetworkTest : BehaviorSpec({
         val network = Network(nodes, connections)
 
         `when`("input is fed forward through the network") {
-            val networkProcessor = NetworkProcessor(network)
+            val networkProcessor = NetworkProcessorSimple(network)
             val outputValues = networkProcessor.feedforward(listOf(1.0))
 
             then("the output should be processed through multiple layers") {
@@ -123,7 +123,7 @@ class NetworkTest : BehaviorSpec({
         val testNetwork = networkBuilder.buildNetworkFromGenome(testNetworkGenome)
         
         `when`("input is fed forward through the network") {
-            val networkProcessor = NetworkProcessor(testNetwork)
+            val networkProcessor = NetworkProcessorSimple(testNetwork)
             val outputValues = networkProcessor.feedforward(listOf(0.5, 0.75))
 
             then("the outputs should be correctly computed from multiple inputs") {

@@ -5,6 +5,7 @@ import algorithm.crossover.CrossMutation
 import algorithm.crossover.RandomCrossover
 import algorithm.operator.*
 import algorithm.weight.SimpleRandomWeight
+import algorithm.weight.GaussianRandomWeight
 import genome.ActivationFunction
 import kotlin.random.Random
 
@@ -29,7 +30,7 @@ fun createDefaultGeneticOperators(
         RandomCrossover(random),
         MutateAddNodeOperatorImpl(random, nodeInnovationTracker, activationSelection),
         MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightRange),
-        MutateWeightsOperatorImpl(SimpleRandomWeight(random, weightRange)),
+        MutateWeightsOperatorImpl(GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive), random,.9, -0.1..0.1),
         MutateRandomActivationFunction(random, activationFunctions),
         MutateConnectionEnabledOperatorImpl(random)
     )

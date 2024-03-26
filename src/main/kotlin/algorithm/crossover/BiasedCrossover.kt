@@ -5,6 +5,7 @@ import kotlin.random.Random
 fun <T> selectGene(group: List<T>, parent1Genes: List<T>, parent2Genes: List<T>, random: Random, biasTowardsParent1: Double): T {
     return if (group.size == 1) group.first()
     else {
+        // println("Selecting gene from group of size ${group.size}")
         if (random.nextDouble() < biasTowardsParent1) group.first { it in parent1Genes }
         else group.first { it in parent2Genes }
     }

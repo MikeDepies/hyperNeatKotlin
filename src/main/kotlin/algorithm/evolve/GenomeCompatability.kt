@@ -2,6 +2,7 @@ package algorithm.evolve
 
 import genome.NetworkGenome
 import population.Species
+import kotlin.random.Random
 
 interface GenomeCompatibility {
     fun calculateDistance(genome1: NetworkGenome, genome2: NetworkGenome): Double
@@ -40,11 +41,12 @@ class FitnessSharingExponential : FitnessSharing {
 class SpeciationImpl(
         private val compatibilityThreshold: Double,
         private val genomeCompatibility: GenomeCompatibility,
-        override val speciesList: MutableList<Species> = mutableListOf()
+        private val random: Random,
+        override val speciesList: MutableList<Species> = mutableListOf(),
 ) : Speciation {
 
     override fun categorizeIntoSpecies(genomes: List<NetworkGenome>) {
-
+        speciesList.forEach { it.members.clear() }
         for (genome in genomes) {
             var foundSpecies = false
             for (species in speciesList) {
@@ -59,14 +61,15 @@ class SpeciationImpl(
             }
             if (!foundSpecies) {
                 val newSpeciesId = speciesList.size + 1
-                speciesList.add(Species(newSpeciesId, mutableListOf(genome), genome))
+                println("Creating new species ($newSpeciesId) for genome ${genome}")
+                speciesList.add(Species(newSpeciesId, mutableListOf(genome), genome.copy()))
                 genome.speciesId = newSpeciesId
             }
         }
     }
     override fun updateSpeciesRepresentatives() {
         for (species in speciesList) {
-            species.representative = species.members.random()
+            species.representative = species.members.random(random)
         }
     }
 }

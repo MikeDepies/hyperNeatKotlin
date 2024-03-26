@@ -48,10 +48,14 @@ class NetworkBuilder(private val activationFunctionMapper: ActivationFunctionMap
     }
 }
 
-class NetworkProcessor(private val network: Network) {
+interface NetworkProcessor {
+    fun feedforward(inputValues: List<Double>): List<Double>
+}
+
+class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
     val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
 
-    fun feedforward(inputValues: List<Double>): List<Double> {
+    override fun feedforward(inputValues: List<Double>): List<Double> {
         network.nodes.forEach { it.inputValue = 0.0 } // Reset node input values
 
         // Efficiently assign input values to input nodes
@@ -79,10 +83,10 @@ class NetworkProcessor(private val network: Network) {
         return outputNodes.map { it.outputValue }
     }
 }
-class NetworkProcessorStateful(private val network: Network) {
+class NetworkProcessorStateful(private val network: Network, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) : NetworkProcessor {
     private val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
 
-    fun feedforward(inputValues: List<Double>, maxIterations: Int = 10, convergenceThreshold: Double = 0.01): List<Double> {
+    override fun feedforward(inputValues: List<Double>): List<Double> {
         resetInputValues()
         assignInputValues(inputValues)
 
@@ -132,7 +136,11 @@ class NetworkProcessorStateful(private val network: Network) {
 
 class NetworkProcessorFactory(val networkBuilder: NetworkBuilder) {
     fun createProcessor(genome: NetworkGenome): NetworkProcessor {
-        return NetworkProcessor(networkBuilder.buildNetworkFromGenome(genome))
+        return if (NetworkCycleTester(networkBuilder.buildNetworkFromGenome(genome)).hasCyclicConnections()) {
+            NetworkProcessorStateful(networkBuilder.buildNetworkFromGenome(genome), maxIterations = 10, convergenceThreshold = 0.01)
+        } else {
+            NetworkProcessorSimple(networkBuilder.buildNetworkFromGenome(genome))
+        }
     }
 }
 
