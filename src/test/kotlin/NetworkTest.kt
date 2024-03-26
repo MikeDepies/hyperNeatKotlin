@@ -106,11 +106,41 @@ class NetworkTest : BehaviorSpec({
             }
         }
     }
-
     given("a network with multiple input and output nodes") {
+        val nodeGenomes = listOf(
+            NodeGenome(1, NodeType.INPUT, ActivationFunction.IDENTITY, 0.0),
+            NodeGenome(2, NodeType.HIDDEN, ActivationFunction.RELU, 0.0),
+            NodeGenome(3, NodeType.OUTPUT, ActivationFunction.SIGMOID, 0.0),
+            NodeGenome(4, NodeType.OUTPUT, ActivationFunction.SIGMOID, 0.0)
+        )
+        val connectionGenes = listOf(
+            ConnectionGenome(0, nodeGenomes[0], nodeGenomes[1], 0.5, enabled = true),
+            ConnectionGenome(1, nodeGenomes[1], nodeGenomes[2], 1.0, enabled = true),
+            ConnectionGenome(2, nodeGenomes[1], nodeGenomes[3], 1.5, enabled = true)
+        )
+        val testNetworkGenome = NetworkGenome(nodeGenomes, connectionGenes)
+        val networkBuilder = NetworkBuilder(DefaultActivationFunctionMapper())
+        val testNetwork = networkBuilder.buildNetworkFromGenome(testNetworkGenome)
+        
         `when`("input is fed forward through the network") {
+            val networkProcessor = NetworkProcessor(testNetwork)
+            val outputValues = networkProcessor.feedforward(listOf(0.5, 0.75))
+
             then("the outputs should be correctly computed from multiple inputs") {
-                // Test logic for a network with multiple inputs and outputs
+                outputValues.size shouldBe 2
+                // Correcting the expected output calculation
+                // For the first output node:
+                // Input to the hidden node = 0.5 * 0.5 (since the input node's activation function is IDENTITY, it outputs what it gets)
+                // Output of the hidden node = max(0, 0.25) = 0.25 (RELU activation function)
+                // Input to the first output node = 0.25 * 1.0 = 0.25
+                // Expected output for the first output node = 1 / (1 + exp(-0.25))
+                outputValues[0] shouldBe (1 / (1 + Math.exp(-0.25)))
+                // For the second output node:
+                // Input to the hidden node remains the same = 0.5 * 0.5 = 0.25
+                // Output of the hidden node remains the same = max(0, 0.25) = 0.25
+                // Input to the second output node = 0.25 * 1.5 = 0.375
+                // Expected output for the second output node = 1 / (1 + exp(-0.375))
+                outputValues[1] shouldBe (1 / (1 + Math.exp(-0.375)))
             }
         }
     }
