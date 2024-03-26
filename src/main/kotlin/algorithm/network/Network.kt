@@ -79,6 +79,56 @@ class NetworkProcessor(private val network: Network) {
         return outputNodes.map { it.outputValue }
     }
 }
+class NetworkProcessorStateful(private val network: Network) {
+    private val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
+
+    fun feedforward(inputValues: List<Double>, maxIterations: Int = 10, convergenceThreshold: Double = 0.01): List<Double> {
+        resetInputValues()
+        assignInputValues(inputValues)
+
+        var previousOutputValues = outputNodes.map(Node::outputValue)
+        var iteration = 0
+        var converged = false
+        while (iteration < maxIterations && !converged) {
+            processNodes()
+
+            val currentOutputValues = outputNodes.map(Node::outputValue)
+            converged = isConverged(previousOutputValues, currentOutputValues, convergenceThreshold)
+            if (!converged) {
+                previousOutputValues = currentOutputValues
+            }
+            iteration++
+        }
+
+        return outputNodes.map(Node::outputValue)
+    }
+
+    private fun resetInputValues() = network.nodes.forEach { it.inputValue = 0.0 }
+
+    private fun assignInputValues(inputValues: List<Double>) {
+        network.nodes.filter { it.type == NodeType.INPUT }
+            .take(inputValues.size)
+            .forEachIndexed { index, node -> node.inputValue = inputValues[index] }
+    }
+
+    private fun processNodes() {
+        val inputConnectionsByOutputNodeId = network.connections.groupBy(Connection::outputNodeId)
+        network.nodes.sortedBy { it.type.ordinal }.forEach { node ->
+            inputConnectionsByOutputNodeId[node.id]?.forEach { connection ->
+                network.nodes.find { it.id == connection.inputNodeId }?.apply {
+                    node.inputValue += this.outputValue * connection.weight
+                }
+            }
+            node.activate()
+        }
+    }
+    private fun isConverged(previousOutputValues: List<Double>, currentOutputValues: List<Double>, threshold: Double): Boolean {
+        for (i in previousOutputValues.indices) {
+            if (kotlin.math.abs(previousOutputValues[i] - currentOutputValues[i]) >= threshold) return false
+        }
+        return true
+    }
+}
 
 class NetworkProcessorFactory(val networkBuilder: NetworkBuilder) {
     fun createProcessor(genome: NetworkGenome): NetworkProcessor {
@@ -86,3 +136,31 @@ class NetworkProcessorFactory(val networkBuilder: NetworkBuilder) {
     }
 }
 
+class NetworkCycleTester(val network: Network) {
+    fun hasCyclicConnections(): Boolean {
+        val visited = hashSetOf<Int>()
+        val recStack = hashSetOf<Int>()
+
+        for (node in network.nodes) {
+            if (dfs(node.id, visited, recStack)) return true
+        }
+        return false
+    }
+
+    private fun dfs(currentNodeId: Int, visited: HashSet<Int>, recStack: HashSet<Int>): Boolean {
+        if (recStack.contains(currentNodeId)) return true
+        if (visited.contains(currentNodeId)) return false
+
+        visited.add(currentNodeId)
+        recStack.add(currentNodeId)
+
+        val childNodes = network.connections.filter { it.inputNodeId == currentNodeId }.map { it.outputNodeId }
+        for (childNodeId in childNodes) {
+            if (dfs(childNodeId, visited, recStack)) return true
+        }
+
+        recStack.remove(currentNodeId)
+        return false
+    }
+
+}

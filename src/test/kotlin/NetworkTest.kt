@@ -70,4 +70,48 @@ class NetworkTest : BehaviorSpec({
             }
         }
     }
+
+    // Additional test stubs
+    given("an empty network genome") {
+        val emptyNodeGenomes = listOf<NodeGenome>()
+        val emptyConnectionGenes = listOf<ConnectionGenome>()
+        val emptyNetworkGenome = NetworkGenome(emptyNodeGenomes, emptyConnectionGenes)
+        val networkBuilder = NetworkBuilder(DefaultActivationFunctionMapper())
+        `when`("the network is built from the genome") {
+            val network = networkBuilder.buildNetworkFromGenome(emptyNetworkGenome)
+            then("it should have 0 nodes and 0 connections") {
+                network.nodes.size shouldBe 0
+                network.connections.size shouldBe 0
+            }
+        }
+    }
+    given("a network genome with disabled connections") {
+        val nodeGenomes = listOf(
+            NodeGenome(1, NodeType.INPUT, ActivationFunction.IDENTITY, 0.0),
+            NodeGenome(2, NodeType.HIDDEN, ActivationFunction.RELU, 0.0),
+            NodeGenome(3, NodeType.OUTPUT, ActivationFunction.SIGMOID, 0.0)
+        )
+        val connectionGenes = listOf(
+            ConnectionGenome(0, nodeGenomes[0], nodeGenomes[1], 0.5, enabled = true),
+            ConnectionGenome(1, nodeGenomes[1], nodeGenomes[2], 1.5, enabled = false) // This connection is disabled
+        )
+        val networkGenome = NetworkGenome(nodeGenomes, connectionGenes)
+        val networkBuilder = NetworkBuilder(DefaultActivationFunctionMapper())
+        `when`("the network is built from the genome") {
+            val network = networkBuilder.buildNetworkFromGenome(networkGenome)
+            then("it should only include enabled connections") {
+                network.connections.size shouldBe 1
+                network.connections[0].inputNodeId shouldBe 1
+                network.connections[0].outputNodeId shouldBe 2
+            }
+        }
+    }
+
+    given("a network with multiple input and output nodes") {
+        `when`("input is fed forward through the network") {
+            then("the outputs should be correctly computed from multiple inputs") {
+                // Test logic for a network with multiple inputs and outputs
+            }
+        }
+    }
 })
