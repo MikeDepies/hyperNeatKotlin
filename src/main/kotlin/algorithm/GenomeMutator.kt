@@ -12,9 +12,9 @@ data class MutationOperation(val probability: Double, val operation: GeneticOper
 
 fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
     return listOf(
-            MutationOperation(0.8, geneticOperators.mutateAddConnection),
+            MutationOperation(1.1, geneticOperators.mutateAddConnection),
             MutationOperation(0.1, geneticOperators.mutateAddNode),
-            MutationOperation(0.05, geneticOperators.mutateWeights),
+            MutationOperation(0.9, geneticOperators.mutateWeights),
             MutationOperation(0.04, geneticOperators.mutateActivationFunction),
             MutationOperation(0.01, geneticOperators.mutateConnectionEnabled)
     )

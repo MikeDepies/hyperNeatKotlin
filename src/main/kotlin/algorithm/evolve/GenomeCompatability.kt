@@ -10,6 +10,7 @@ interface GenomeCompatibility {
 interface Speciation {
     fun categorizeIntoSpecies(genomes: List<NetworkGenome>)
     fun updateSpeciesRepresentatives()
+    val speciesList: List<Species>
 }
 
 interface FitnessSharing {
@@ -39,11 +40,10 @@ class FitnessSharingExponential : FitnessSharing {
 class SpeciationImpl(
         private val compatibilityThreshold: Double,
         private val genomeCompatibility: GenomeCompatibility,
-        private val speciesList: MutableList<Species> = mutableListOf()
+        override val speciesList: MutableList<Species> = mutableListOf()
 ) : Speciation {
 
     override fun categorizeIntoSpecies(genomes: List<NetworkGenome>) {
-        val speciesList = mutableListOf<Species>()
 
         for (genome in genomes) {
             var foundSpecies = false
@@ -52,12 +52,15 @@ class SpeciationImpl(
                 val distance = genomeCompatibility.calculateDistance(genome, representativeGenome)
                 if (distance < compatibilityThreshold) {
                     species.members.add(genome)
+                    genome.speciesId = species.id
                     foundSpecies = true
                     break
                 }
             }
             if (!foundSpecies) {
-                speciesList.add(Species(speciesList.size + 1, mutableListOf(genome), genome))
+                val newSpeciesId = speciesList.size + 1
+                speciesList.add(Species(newSpeciesId, mutableListOf(genome), genome))
+                genome.speciesId = newSpeciesId
             }
         }
     }
