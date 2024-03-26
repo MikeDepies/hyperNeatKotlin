@@ -4,6 +4,7 @@ import algorithm.*
 import algorithm.activation.SingleActivationFunctionSelection
 import algorithm.crossover.RandomCrossover
 import algorithm.evolve.*
+import algorithm.fitnessevaluator.XorFitnessEvaluator
 import algorithm.weight.GaussianRandomWeight
 import genome.ActivationFunction
 import genome.NetworkGenome
@@ -26,12 +27,12 @@ fun main() {
                     SingleActivationFunctionSelection(ActivationFunction.SIGMOID)
             )
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)
-    val compatabilityThreshold = 3.0
+    val compatabilityThreshold = 4.0
     val genomeCompatibility = GenomeCompatibilityTraditional(createDefaultCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
     val populationSize = 100
-    val crossMutateChance = 0.2
+    val crossMutateChance = 0.9
 
     val neatProcess =
             NEATProcessWithDirectReplacement(
@@ -44,7 +45,7 @@ fun main() {
                     populationSize,
                     crossMutateChance,
                     random,
-                    0.1
+                    0.2
             )
 
     // Step 5: Setup and run the NEAT algorithm

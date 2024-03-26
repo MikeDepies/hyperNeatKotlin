@@ -61,7 +61,7 @@ class SpeciationImpl(
             }
             if (!foundSpecies) {
                 val newSpeciesId = speciesList.size + 1
-                println("Creating new species ($newSpeciesId) for genome ${genome}")
+                // println("Creating new species ($newSpeciesId) for genome ${genome}")
                 speciesList.add(Species(newSpeciesId, mutableListOf(genome), genome.copy()))
                 genome.speciesId = newSpeciesId
             }
@@ -82,7 +82,7 @@ data class Coefficients(
 /* 
     Default coefficients for traditional NEAT
 */
-fun createDefaultCoefficients() = Coefficients(1.0, 1.0, 0.4)
+fun createDefaultCoefficients() = Coefficients(1.0, 1.0, 1.4)
 
 class GenomeCompatibilityTraditional(private val coefficients: Coefficients, private val normalizationThreshold: Int = 20) : GenomeCompatibility {
 
