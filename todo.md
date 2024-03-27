@@ -4,4 +4,8 @@
 - create a couple of other simple test problems
   - Non-xor problems such as parity
   - Simple classification problems such as iris
+- expand on maze problem to include more complex mazes
+- implement a maze problem with a continuous action space
+- implement maze problem with a continuous state space
+- implement maze problem with sensors
 

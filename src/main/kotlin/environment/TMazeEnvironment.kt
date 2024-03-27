@@ -1,7 +1,9 @@
 package environment
 
+import kotlin.random.Random
+
 enum class RewardSide {
-    LEFT, RIGHT
+    LEFT, RIGHT, CENTER, RANDOM
 }
 
 enum class Action {
@@ -28,8 +30,7 @@ fun createMazeEnvironmentFromFormattedString(mazeString: String, rewardSide: Rew
 
     return MazeEnvironment(agentPosition, goalPosition, mazeStructure, rewardSide)
 }
-
-fun createTMaze(rewardSide: RewardSide): MazeEnvironment {
+fun createTMaze(rewardSide: RewardSide, random: Random): MazeEnvironment {
     val mazeString = when (rewardSide) {
         RewardSide.LEFT -> """
             |#########
@@ -47,6 +48,38 @@ fun createTMaze(rewardSide: RewardSide): MazeEnvironment {
             |#   #  G#
             |#########
         """.trimMargin()
+        RewardSide.CENTER -> """
+            |#########
+            |#       #
+            |#   A   #
+            |#   #   #
+            |# G #   #
+            |#########
+        """.trimMargin()
+        RewardSide.RANDOM -> {
+            val goalPosition = when ((1..6).random(random)) {
+                1 -> "G  #"
+                2 -> "#  G"
+                3 -> "# G "
+                4 -> " G #"
+                5 -> "G  #"
+                6 -> " G  "
+                else -> error("Invalid random number")
+            }
+            val agentPosition = when ((1..3).random(random)) {
+                1 -> "   A  " // Original position
+                2 -> "A     " // Leftmost position
+                else -> "     A" // Rightmost position
+            }
+            """
+                |#########
+                |#$agentPosition #
+                |#   #   #
+                |#   #   #
+                |#$goalPosition   #
+                |#########
+            """.trimMargin()
+        }
     }
     return createMazeEnvironmentFromFormattedString(mazeString, rewardSide)
 }
@@ -118,7 +151,7 @@ fun deriveMazeBoundaries(mazeEnvironment: MazeEnvironment): Pair<Position, Posit
     return Pair(lowerLeftCorner, upperRightCorner)
 }
 fun main() {
-    val mazeStructure = createTMaze(RewardSide.RIGHT)
+    val mazeStructure = createTMaze(RewardSide.RIGHT, Random.Default)
     val mazeEnvironment = TmazeEnvironment(mazeStructure)
     val actions = listOf(Action.MOVE_FORWARD, Action.MOVE_LEFT, Action.MOVE_FORWARD, Action.MOVE_RIGHT, Action.MOVE_FORWARD) // Assuming Action is an enum or similar for possible actions
 
@@ -128,3 +161,31 @@ fun main() {
     }
 }
 
+fun hasPathToGoal(environment: TmazeEnvironment): Boolean {
+    val visited = mutableSetOf<Position>()
+    val queue = ArrayDeque<Position>()
+    queue.add(environment.agentPosition)
+
+    while (queue.isNotEmpty()) {
+        val current = queue.removeFirst()
+        if (current == environment.goalPosition) {
+            return true
+        }
+
+        val neighbors = listOf(
+            Position(current.x + 1, current.y),
+            Position(current.x - 1, current.y),
+            Position(current.x, current.y + 1),
+            Position(current.x, current.y - 1)
+        )
+
+        neighbors.filter { neighbor ->
+            neighbor !in environment.mazeStructure && neighbor !in visited
+        }.forEach { neighbor ->
+            visited.add(neighbor)
+            queue.add(neighbor)
+        }
+    }
+
+    return false
+}

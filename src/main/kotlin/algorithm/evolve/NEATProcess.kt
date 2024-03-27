@@ -5,6 +5,7 @@ import population.Species
 import algorithm.FitnessEvaluator
 import algorithm.crossover.CrossMutation
 import algorithm.GenomeMutator
+import kotlin.math.max
 import kotlin.random.Random
 
 interface NEATProcess {
@@ -161,7 +162,8 @@ class NEATProcessWithDirectReplacement(
     private val populationSize: Int,
     private val crossMutateChance: Double,
     private val random: Random,
-    private val survivalRate: Double
+    private val survivalRate: Double,
+    private val numberOfElites: Int = 1
 ) : NEATProcess {
 
     override fun categorizeIntoSpecies(genomes: List<NetworkGenome>) {
@@ -182,14 +184,20 @@ class NEATProcessWithDirectReplacement(
 
     override fun reproduce(selectedGenomes: List<NetworkGenome>): List<NetworkGenome> {
         val offspring = mutableListOf<NetworkGenome>()
-        val totalFitness = selectedGenomes.sumOf { it.fitness ?: 0.0 }
+
+        // Normalize fitness values to ensure all are positive
+        val minFitness = selectedGenomes.minOf { it.fitness ?: 0.0 }
+        val fitnessOffset = if (minFitness < 0) (-minFitness + 1) else 0.0
+        val normalizedFitnesses = selectedGenomes.map { it.fitness?.plus(fitnessOffset) ?: 0.0 }
+
+        val totalFitness = normalizedFitnesses.sum()
         val speciesGroups = selectedGenomes.groupBy { it.speciesId }
         var offspringCountSoFar = 0
 
         // Calculate offspring count for each species and produce offspring
         val offspringCounts = speciesGroups.mapValues { (_, group) ->
             val groupFitness = group.sumOf { it.fitness ?: 0.0 }
-            val offspringCount = ((groupFitness / totalFitness) * populationSize).toInt()
+            val offspringCount = max(1, ((groupFitness / totalFitness) * populationSize).toInt())
             offspringCount
         }
 
@@ -253,9 +261,26 @@ class NEATProcessWithDirectReplacement(
         genomes.forEach { it.fitness = fitnessEvaluator.calculateFitness(it) }
         categorizeIntoSpecies(genomes)
         shareFitnessWithinSpecies(speciation.speciesList)
+        
+        // Select elites based on fitness
+        val elites = genomes.sortedByDescending { it.fitness }.take(numberOfElites)
+        
         val selectedForReproduction = selectForReproduction(speciation.speciesList)
         val offspring = reproduce(selectedForReproduction)
-        return replaceLeastFit(genomes, offspring)
+        
+        // Ensure the total population size is maintained after adding elites
+        val adjustedOffspring = adjustPopulationAfterEliteAddition(offspring, elites)
+        
+        return replaceLeastFit(genomes, adjustedOffspring)
+    }
+
+    private fun adjustPopulationAfterEliteAddition(offspring: List<NetworkGenome>, elites: List<NetworkGenome>): List<NetworkGenome> {
+        val totalRequiredOffspring = populationSize - elites.size
+        return if (offspring.size > totalRequiredOffspring) {
+            offspring.take(totalRequiredOffspring) + elites
+        } else {
+            offspring + elites
+        }
     }
 
     private fun List<NetworkGenome>.randomPair(): Pair<NetworkGenome, NetworkGenome> {

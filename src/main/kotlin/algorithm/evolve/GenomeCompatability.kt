@@ -82,7 +82,7 @@ data class Coefficients(
 /* 
     Default coefficients for traditional NEAT
 */
-fun createDefaultCoefficients() = Coefficients(1.0, 1.0, 1.4)
+fun createDefaultCoefficients() = Coefficients(1.0, 1.0, 0.4)
 
 class GenomeCompatibilityTraditional(private val coefficients: Coefficients, private val normalizationThreshold: Int = 20) : GenomeCompatibility {
 

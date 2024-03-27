@@ -7,20 +7,26 @@ import algorithm.crossover.BiasedCrossover
 import genome.ActivationFunction
 import genome.NetworkGenome
 import algorithm.evolve.*
+import algorithm.fitnessevaluator.SensorInputGenerator
 import algorithm.weight.GaussianRandomWeight
 import algorithm.fitnessevaluator.TmazeFitnessEvaluator
 import environment.RewardSide
+import environment.TmazeEnvironment
+import environment.createTMaze
 import environment.renderEnvironmentAsString
 import kotlin.random.Random
 
 fun main() {
     val random = Random(0)
-    val weightRange = -30.0..30.0
+    val weightRange = -3.0..3.0
     // Step 3: Initialize components
     val initialPopulationGenerator = tmazePopulationGenerator(weightRange, random)
-    
+    val rewardSide = RewardSide.values().random(random)
+    val task = createTMaze(rewardSide, random)
+    val environment = TmazeEnvironment(task)
+    val sensorInputGenerator = SensorInputGenerator(environment)
     val fitnessEvaluator = object : FitnessEvaluator {
-        val f = TmazeFitnessEvaluator(RewardSide.LEFT)
+        val f = TmazeFitnessEvaluator(RewardSide.LEFT, random)
         override fun calculateFitness(genome: NetworkGenome): Double {
 //            f.environment.reset()
 //            println("Initial state\n ${renderEnvironmentAsString(f.environment)}\n")
@@ -87,7 +93,7 @@ fun main() {
 }
 fun tmazePopulationGenerator(weightRange: ClosedRange<Double>, random: Random): InitialPopulationGenerator {
     return SimpleInitialPopulationGenerator(
-        inputNodeCount = 3, // Adjusted for TMaze input (agent's x position, agent's y position, and reward side)
+        inputNodeCount = 3, // Adjusted for TMaze input (agent's x position, agent's y position, and reward side),
         outputNodeCount = 3, // Adjusted for TMaze actions (MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT)
         hiddenNodeCount = 0, // No hidden nodes initially
         connectionDensity = 1.0,

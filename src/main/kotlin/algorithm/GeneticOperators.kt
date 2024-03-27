@@ -30,7 +30,7 @@ fun createDefaultGeneticOperators(
         RandomCrossover(random),
         MutateAddNodeOperatorImpl(random, nodeInnovationTracker, activationSelection),
         MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightRange),
-        MutateWeightsOperatorImpl(GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive), random,.9, -0.1..0.1),
+        MutateWeightsOperatorImpl(GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive), random,.7, -0.01..0.01),
         MutateRandomActivationFunction(random, activationFunctions),
         MutateConnectionEnabledOperatorImpl(random)
     )
