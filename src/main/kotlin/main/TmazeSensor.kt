@@ -2,6 +2,7 @@ package main
 
 import algorithm.*
 import algorithm.activation.SingleActivationFunctionSelection
+import algorithm.crossover.BiasedCrossover
 import algorithm.crossover.RandomCrossover
 import algorithm.evolve.*
 import algorithm.fitnessevaluator.MazeFitnessEvaluatorSensor
@@ -23,7 +24,7 @@ fun main() {
     // Step 3: Initialize components
     val initialPopulationGenerator = tmazePopulationGeneratorSensor2(weightRange, random)
     val rewardSides = listOf(RewardSide.RANDOM)//RewardSide.values()
-    val maps = (1..10).map {
+    val maps = (1..100).map {
         val rewardSide = rewardSides.random(random)
         createTMaze(rewardSide, random)
     }
@@ -51,7 +52,7 @@ fun main() {
                     return totalFitness / numberOfEvaluations
                 }
             }
-    val crossMutation = RandomCrossover(random)
+    val crossMutation = BiasedCrossover(random)
     val geneticOperators =
             createDefaultGeneticOperators(
                     weightRange,
@@ -62,11 +63,11 @@ fun main() {
                     SingleActivationFunctionSelection(ActivationFunction.SIGMOID)
             )
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)
-    val compatabilityThreshold = 1.3
+    val compatabilityThreshold = .6
     val genomeCompatibility = GenomeCompatibilityTraditional(createDefaultCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
-    val populationSize = 500 // Adjusted for Iris dataset size
+    val populationSize = 100 // Adjusted for Iris dataset size
     val crossMutateChance = 0.7
 
     val neatProcess =

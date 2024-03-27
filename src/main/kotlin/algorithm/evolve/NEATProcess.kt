@@ -262,25 +262,35 @@ class NEATProcessWithDirectReplacement(
         categorizeIntoSpecies(genomes)
         shareFitnessWithinSpecies(speciation.speciesList)
         
-        // Select elites based on fitness
-        val elites = genomes.sortedByDescending { it.fitness }.take(numberOfElites)
+        // Select elites based on fitness per species
+        val elitesPerSpecies = selectElitesPerSpecies(speciation.speciesList)
         
         val selectedForReproduction = selectForReproduction(speciation.speciesList)
         val offspring = reproduce(selectedForReproduction)
         
-        // Ensure the total population size is maintained after adding elites
-        val adjustedOffspring = adjustPopulationAfterEliteAddition(offspring, elites)
+        // Combine elites from all species with the offspring
+        val combinedOffspring = combineElitesWithOffspring(offspring, elitesPerSpecies)
         
-        return replaceLeastFit(genomes, adjustedOffspring)
+        return replaceLeastFit(genomes, combinedOffspring)
     }
 
-    private fun adjustPopulationAfterEliteAddition(offspring: List<NetworkGenome>, elites: List<NetworkGenome>): List<NetworkGenome> {
-        val totalRequiredOffspring = populationSize - elites.size
-        return if (offspring.size > totalRequiredOffspring) {
-            offspring.take(totalRequiredOffspring) + elites
-        } else {
-            offspring + elites
+    private fun selectElitesPerSpecies(speciesList: List<Species>): List<NetworkGenome> {
+        val elites = mutableListOf<NetworkGenome>()
+        speciesList.forEach { species ->
+            elites.addAll(species.members.sortedByDescending { it.fitness }.take(numberOfElites))
         }
+        return elites
+    }
+
+    private fun combineElitesWithOffspring(offspring: List<NetworkGenome>, elites: List<NetworkGenome>): List<NetworkGenome> {
+        // Ensure the total population size is maintained after adding elites
+        val totalRequiredOffspring = populationSize - elites.size
+        val adjustedOffspring = if (offspring.size > totalRequiredOffspring) {
+            offspring.take(totalRequiredOffspring)
+        } else {
+            offspring
+        }
+        return adjustedOffspring + elites
     }
 
     private fun List<NetworkGenome>.randomPair(): Pair<NetworkGenome, NetworkGenome> {
