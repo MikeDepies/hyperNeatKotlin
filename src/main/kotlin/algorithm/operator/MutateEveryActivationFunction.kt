@@ -14,7 +14,10 @@ class MutateEveryActivationFunction(
     override fun apply(genome: NetworkGenome): NetworkGenome {
         val updatedNodeGenomes =
                 genome.nodeGenomes.map { it.copy(activationFunction = randomActivationFunction()) }
-        return genome.copy(nodeGenomes = updatedNodeGenomes)
+        return genome.copy(nodeGenomes = updatedNodeGenomes,
+            fitness = null,
+            sharedFitness = null,
+            speciesId = null)
     }
     fun randomActivationFunction(): ActivationFunction {
         return activationFunctions.random(random)
@@ -31,7 +34,10 @@ class MutateRandomActivationFunction(
             if (index == randomIndex) nodeGenome.copy(activationFunction = randomActivationFunction())
             else nodeGenome
         }
-        return genome.copy(nodeGenomes = updatedNodeGenomes)
+        return genome.copy(nodeGenomes = updatedNodeGenomes,
+            fitness = null,
+            sharedFitness = null,
+            speciesId = null)
     }
     fun randomActivationFunction(): ActivationFunction {
         return activationFunctions.random(random)

@@ -8,12 +8,14 @@ import genome.NetworkGenome
 import genome.NodeGenome
 import genome.NodeType
 import kotlin.random.Random
+
 interface MutateAddNodeOperator : GeneticOperator {
     val random: Random
     val innovationTracker: InnovationTracker
     val connectionInnovationTracker: InnovationTracker
     val activationFunctionSelection: ActivationFunctionSelection
 }
+
 class MutateAddNodeOperatorImpl(
     override val random: Random,
     override val innovationTracker: InnovationTracker,
@@ -55,13 +57,16 @@ class MutateAddNodeOperatorImpl(
         // Update the genome
         val updatedNodeGenomes = genome.nodeGenomes + newNode
         val updatedConnectionGenes =
-                genome.connectionGenes.map {
-                    if (it.id == connectionToSplit.id) disabledConnection else it
-                } + newConnection1 + newConnection2
+            genome.connectionGenes.map {
+                if (it.id == connectionToSplit.id) disabledConnection else it
+            } + newConnection1 + newConnection2
 
         return genome.copy(
-                nodeGenomes = updatedNodeGenomes,
-                connectionGenes = updatedConnectionGenes
+            nodeGenomes = updatedNodeGenomes,
+            connectionGenes = updatedConnectionGenes,
+            fitness = null,
+            sharedFitness = null,
+            speciesId = null
         )
     }
 }

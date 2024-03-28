@@ -42,7 +42,10 @@ class DefaultGenomeMutator(val mutationOperations: List<MutationOperation>, val 
                         }
                         mutatedGenome
                     } else {
-                        currentGenome
+                        currentGenome.copy(
+                            fitness = null,
+                            sharedFitness = null,
+                            speciesId = null)
                     }
                 }
                 

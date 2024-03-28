@@ -45,7 +45,10 @@ fun biasedCrossover(
             }
         }
 
-    return NetworkGenome(childNodes, childConnectionGenes)
+    return NetworkGenome(childNodes, childConnectionGenes,
+        fitness = null,
+        sharedFitness = null,
+        speciesId = null)
 }
 
 class BiasedCrossover(val random: Random, val biasTowardsParent1: Double = 0.75) : CrossMutation {

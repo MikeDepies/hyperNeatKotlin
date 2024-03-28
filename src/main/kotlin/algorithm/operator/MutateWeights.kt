@@ -28,6 +28,9 @@ class MutateWeightsOperatorImpl(override val randomWeight: RandomWeight, val ran
                 node.copy(bias = randomWeight())
             }
         }
-        return genome.copy(connectionGenes = updatedConnectionGenes, nodeGenomes = updatedNodeGenes)
+        return genome.copy(connectionGenes = updatedConnectionGenes, nodeGenomes = updatedNodeGenes,
+            fitness = null,
+            sharedFitness = null,
+            speciesId = null)
     }
 }

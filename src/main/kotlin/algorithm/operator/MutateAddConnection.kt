@@ -49,7 +49,10 @@ class MutateAddConnectionOperatorImpl(
                 enabled = true
             )
 
-            return genome.copy(connectionGenes = genome.connectionGenes + newConnection)
+            return genome.copy(connectionGenes = genome.connectionGenes + newConnection,
+                fitness = null,
+                sharedFitness = null,
+                speciesId = null)
         }
 
         return genome
