@@ -20,7 +20,7 @@ class GeneticOperatorTest : BehaviorSpec({
         val networkGenome = NetworkGenome(nodeGenomes, connectionGenomes)
 
         `when`("mutate add node is applied") {
-            val mutateAddNode = MutateAddNodeOperatorImpl(random, InnovationTracker(),  InnovationTracker(), SingleActivationFunctionSelection(ActivationFunction.IDENTITY))
+            val mutateAddNode = MutateAddNodeOperatorImpl(random, InnovationTracker(),  InnovationTracker(), SingleActivationFunctionSelection(ActivationFunction.IDENTITY), SimpleRandomWeight(random, -1.0..1.0))
             val mutatedGenome = mutateAddNode.apply(networkGenome)
             then("it should add a new node") {
                 mutatedGenome.nodeGenomes.size shouldBe 3
@@ -29,7 +29,7 @@ class GeneticOperatorTest : BehaviorSpec({
         }
 
         `when`("mutate add connection is applied") {
-            val mutateAddConnection = MutateAddConnectionOperatorImpl(Random, InnovationTracker(), 0.0..1.0)
+            val mutateAddConnection = MutateAddConnectionOperatorImpl(Random, InnovationTracker(), SimpleRandomWeight(random, -1.0..1.0))
             val mutatedGenome = mutateAddConnection.apply(networkGenome)
             then("it should add a new connection") {
                 mutatedGenome.connectionGenes.size shouldBe 2

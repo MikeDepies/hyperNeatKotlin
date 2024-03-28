@@ -24,7 +24,6 @@ data class WeightMutationConfig(
     val perturbationAmount: ClosedRange<Double>
 )
 fun createDefaultGeneticOperators(
-    weightRange: ClosedRange<Double>,
     activationFunctions: List<ActivationFunction>,
     random: Random,
     nodeInnovationTracker: InnovationTracker,
@@ -34,8 +33,8 @@ fun createDefaultGeneticOperators(
 ): GeneticOperators {
     return GeneticOperators(
         RandomCrossover(random),
-        MutateAddNodeOperatorImpl(random, nodeInnovationTracker, connectionInnovationTracker, activationSelection),
-        MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightRange),
+        MutateAddNodeOperatorImpl(random, nodeInnovationTracker, connectionInnovationTracker, activationSelection, weightMutationConfig.randomWeight),
+        MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightMutationConfig.randomWeight),
         MutateWeightsOperatorImpl(weightMutationConfig.randomWeight, random, weightMutationConfig.perturbationChance, weightMutationConfig.perturbationAmount),
         MutateRandomActivationFunction(random, activationFunctions),
         MutateConnectionEnabledOperatorImpl(random)

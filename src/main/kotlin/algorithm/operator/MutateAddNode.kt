@@ -2,6 +2,7 @@ package algorithm.operator
 
 import algorithm.activation.ActivationFunctionSelection
 import algorithm.InnovationTracker
+import algorithm.weight.RandomWeight
 import genome.ConnectionGenome
 import genome.NetworkGenome
 import genome.NodeGenome
@@ -17,7 +18,8 @@ class MutateAddNodeOperatorImpl(
     override val random: Random,
     override val innovationTracker: InnovationTracker,
     override val connectionInnovationTracker: InnovationTracker,
-    override val activationFunctionSelection: ActivationFunctionSelection
+    override val activationFunctionSelection: ActivationFunctionSelection,
+    val randomWeight: RandomWeight
 ) : MutateAddNodeOperator {
     override fun apply(genome: NetworkGenome): NetworkGenome {
         val enabledConnections = genome.connectionGenes.filter { it.enabled }
@@ -30,7 +32,7 @@ class MutateAddNodeOperatorImpl(
 
         // Create a new node
         val newNodeId = innovationTracker.getNextInnovationNumber()
-        val newNode = NodeGenome(newNodeId, NodeType.HIDDEN, activationFunctionSelection.select(), 0.0)
+        val newNode = NodeGenome(newNodeId, NodeType.HIDDEN, activationFunctionSelection.select(), randomWeight())
 
         // Create two new connections
         val newConnection1 =

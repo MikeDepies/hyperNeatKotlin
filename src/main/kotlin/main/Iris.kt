@@ -35,7 +35,6 @@ fun main() {
     val fitnessEvaluator = IrisFitnessEvaluator(random)
     val crossMutation = RandomCrossover(random)
     val geneticOperators = createDefaultGeneticOperators(
-        weightRange,
         listOf(ActivationFunction.SIGMOID),
         random,
         nodeInnovationTracker,

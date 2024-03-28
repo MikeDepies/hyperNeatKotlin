@@ -8,6 +8,7 @@ import genome.ConnectionGenome
 import genome.NodeType
 import algorithm.InnovationTracker
 import algorithm.activation.ActivationFunctionSelection
+import algorithm.weight.SimpleRandomWeight
 import genome.ActivationFunction
 
 class MutationOperatorsTest : BehaviorSpec({
@@ -15,6 +16,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(0)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.SIGMOID
         }
@@ -22,7 +24,8 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
+            activationFunctionSelection,
+            randomWeight
         )
 
         `when`("Mutate add node is applied") {
@@ -50,6 +53,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(0)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.SIGMOID
         }
@@ -68,7 +72,8 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
+            activationFunctionSelection,
+            randomWeight
         )
         val mutatedGenome = mutateAddNodeOperator.apply(originalGenome)
 
@@ -83,6 +88,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(0)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.SIGMOID
         }
@@ -97,7 +103,8 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
+            activationFunctionSelection,
+            randomWeight
         )
         val mutatedGenome = mutateAddNodeOperator.apply(originalGenome)
 
@@ -111,6 +118,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(0)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.SIGMOID
         }
@@ -129,7 +137,8 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
+            activationFunctionSelection,
+            randomWeight
         )
         val mutatedGenome = mutateAddNodeOperator.apply(originalGenome)
 
@@ -144,6 +153,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(42)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.SIGMOID
         }
@@ -160,8 +170,9 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
-        )
+            activationFunctionSelection,
+            randomWeight
+        )   
         val mutatedGenome = mutateAddNodeOperator.apply(originalGenome)
 
         then("It should add a node and two connections with seed 42") {
@@ -174,6 +185,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(0)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.SIGMOID
         }
@@ -190,7 +202,8 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
+            activationFunctionSelection,
+            randomWeight
         )
         val mutatedGenome = mutateAddNodeOperator.apply(originalGenome)
 
@@ -204,6 +217,7 @@ class MutationOperatorsTest : BehaviorSpec({
         val random = Random(42)
         val innovationTracker = InnovationTracker()
         val connectionInnovationTracker = InnovationTracker()
+        val randomWeight = SimpleRandomWeight(random, -1.0..1.0)
         // This selection mechanism will always choose RELU for new nodes
         val activationFunctionSelection = object : ActivationFunctionSelection {
             override fun select(): ActivationFunction = ActivationFunction.RELU
@@ -222,7 +236,8 @@ class MutationOperatorsTest : BehaviorSpec({
             random,
             innovationTracker,
             connectionInnovationTracker,
-            activationFunctionSelection
+            activationFunctionSelection,
+            randomWeight
         )
         // Apply mutation to add a node
         val mutatedGenome = mutateAddNodeOperator.apply(originalGenome)
