@@ -29,12 +29,16 @@ fun createDefaultGeneticOperators(
     nodeInnovationTracker: InnovationTracker,
     connectionInnovationTracker: InnovationTracker,
     activationSelection: ActivationFunctionSelection,
-    weightMutationConfig: WeightMutationConfig
+    weightMutationConfig: WeightMutationConfig,
+    allowCyclicConnections: Boolean = false,
+    allowSelfConnections: Boolean = false,
+    allowOutputAsSource: Boolean = false,
+    allowInputAsTarget: Boolean = false,
 ): GeneticOperators {
     return GeneticOperators(
         RandomCrossover(random),
         MutateAddNodeOperatorImpl(random, nodeInnovationTracker, connectionInnovationTracker, activationSelection, weightMutationConfig.randomWeight),
-        MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightMutationConfig.randomWeight),
+        MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightMutationConfig.randomWeight, allowOutputAsSource, allowInputAsTarget, allowCyclicConnections, allowSelfConnections, ),
         MutateWeightsOperatorImpl(weightMutationConfig.randomWeight, random, weightMutationConfig.perturbationChance, weightMutationConfig.perturbationAmount),
         MutateRandomActivationFunction(random, activationFunctions),
         MutateConnectionEnabledOperatorImpl(random)

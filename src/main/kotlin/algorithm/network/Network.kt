@@ -172,3 +172,35 @@ class NetworkCycleTester(val network: Network) {
     }
 
 }
+
+class NetworkGenomeTester {
+
+    fun hasCyclicConnections(genome: NetworkGenome): Boolean {
+        val visited = hashSetOf<Int>()
+        val recStack = hashSetOf<Int>()
+
+        for (nodeGenome in genome.nodeGenomes) {
+            if (dfs(nodeGenome.id, genome, visited, recStack)) return true
+        }
+        return false
+    }
+
+    private fun dfs(currentNodeId: Int, genome: NetworkGenome, visited: HashSet<Int>, recStack: HashSet<Int>): Boolean {
+        if (recStack.contains(currentNodeId)) return true
+        if (visited.contains(currentNodeId)) return false
+
+        visited.add(currentNodeId)
+        recStack.add(currentNodeId)
+
+        val childNodeIds = genome.connectionGenes
+            .filter { it.inputNode.id == currentNodeId }
+            .map { it.outputNode.id }
+
+        for (childNodeId in childNodeIds) {
+            if (dfs(childNodeId, genome, visited, recStack)) return true
+        }
+
+        recStack.remove(currentNodeId)
+        return false
+    }
+}

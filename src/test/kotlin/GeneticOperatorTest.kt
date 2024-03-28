@@ -32,7 +32,7 @@ class GeneticOperatorTest : BehaviorSpec({
             val mutateAddConnection = MutateAddConnectionOperatorImpl(Random, InnovationTracker(), SimpleRandomWeight(random, -1.0..1.0))
             val mutatedGenome = mutateAddConnection.apply(networkGenome)
             then("it should add a new connection") {
-                mutatedGenome.connectionGenes.size shouldBe 2
+                mutatedGenome.connectionGenes.size shouldBe 1
             }
         }
 

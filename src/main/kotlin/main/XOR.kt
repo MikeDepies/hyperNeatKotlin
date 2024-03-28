@@ -34,7 +34,7 @@ fun main() {
             weightRange.start,
             weightRange.endInclusive
         )
-    val weightMutationConfig = WeightMutationConfig(weight, .7, (-.1..0.1))
+    val weightMutationConfig = WeightMutationConfig(weight, .9, (-.1..0.1))
     val nodeInnovationTracker = InnovationTracker()
     val connectionInnovationTracker = InnovationTracker()
     val initialPopulationGenerator =
@@ -48,7 +48,7 @@ fun main() {
     val crossMutation = BiasedCrossover(random)
     val geneticOperators =
         createDefaultGeneticOperators(
-            
+
             listOf(ActivationFunction.SIGMOID),
             random,
             nodeInnovationTracker,
@@ -56,7 +56,8 @@ fun main() {
             SingleActivationFunctionSelection(
                 ActivationFunction.SIGMOID
             ),
-            weightMutationConfig
+            weightMutationConfig,
+            true, true, true, true
         )
 
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)
@@ -65,7 +66,7 @@ fun main() {
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
     val populationSize = 500
-    val crossMutateChance = 0.0
+    val crossMutateChance = 0.7
 
     val neatProcess =
         NEATProcessWithDirectReplacement(
@@ -83,7 +84,7 @@ fun main() {
 
     // Step 5: Setup and run the NEAT algorithm
     var currentPopulation = emptyList<NetworkGenome>()
-    val maxGenerations = 500
+    val maxGenerations = 5000
     for (generation in 1..maxGenerations) {
         print("Generation $generation: ")
         currentPopulation = neatProcess.executeGeneration(currentPopulation)
