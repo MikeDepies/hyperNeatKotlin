@@ -3,6 +3,7 @@ package algorithm
 import algorithm.operator.GeneticOperator
 import genome.NetworkGenome
 import kotlin.random.Random
+import util.GenomeTestUtils
 
 interface GenomeMutator {
     fun mutateGenome(genome: NetworkGenome): NetworkGenome
@@ -27,11 +28,24 @@ class DefaultGenomeMutator(val mutationOperations: List<MutationOperation>, val 
         val mutatedGenome =
                 mutationOperations.fold(genome) { currentGenome, mutationOperation ->
                     if (random.nextDouble() < mutationOperation.probability) {
-                        mutationOperation.operation.apply(currentGenome)
+                        val mutatedGenome = mutationOperation.operation.apply(currentGenome)
+                        if (GenomeTestUtils.countGenomesWithOverlappingConnectionIds(listOf(mutatedGenome)) > 0) {
+                            
+                            println(mutationOperation)
+                            println(GenomeTestUtils.generateConflictedConnectionIds(listOf(mutatedGenome)))
+                            mutatedGenome.connectionGenes.forEach { connectionGene ->
+                                
+                                    println(connectionGene)
+                                
+                            }
+                            throw RuntimeException("Mutated genome has overlapping connection ids")
+                        }
+                        mutatedGenome
                     } else {
                         currentGenome
                     }
                 }
+                
         return mutatedGenome
     }
 }

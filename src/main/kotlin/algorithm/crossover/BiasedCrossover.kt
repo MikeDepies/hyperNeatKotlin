@@ -25,7 +25,25 @@ fun biasedCrossover(
     val childConnectionGenes = (parent1.connectionGenes + parent2.connectionGenes)
         .groupBy { it.id }
         .values
-        .map { group -> selectGene(group, parent1.connectionGenes, parent2.connectionGenes, random, biasTowardsParent1) }
+        .map { group ->
+
+            try {
+                selectGene(group, parent1.connectionGenes, parent2.connectionGenes, random, biasTowardsParent1)
+            } catch (e: Exception) {
+                println("")
+                group.forEach {
+                    println(it)
+                }
+                val parent1 = parent1.connectionGenes
+                val parent2 = parent2.connectionGenes
+                println("is c1 from parent 1 = ${group.first() in parent1}")
+                println("is c1 from parent 2 = ${group.first() in parent2}")
+                println("is c2 from parent 1 = ${group[1] in parent1}")
+                println("is c2 from parent 2 = ${group[1] in parent2}")
+
+                throw RuntimeException("Caught exception $e")
+            }
+        }
 
     return NetworkGenome(childNodes, childConnectionGenes)
 }

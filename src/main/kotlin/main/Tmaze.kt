@@ -16,17 +16,32 @@ import environment.createTMaze
 import environment.renderEnvironmentAsString
 import kotlin.random.Random
 
+private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
+
+private fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
+    return listOf(
+            MutationOperation(0.04, geneticOperators.mutateAddConnection),
+            MutationOperation(0.01, geneticOperators.mutateAddNode),
+            MutationOperation(0.9, geneticOperators.mutateWeights),
+            MutationOperation(0.04, geneticOperators.mutateActivationFunction),
+            MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
+    )
+}
 fun main() {
     val random = Random(0)
     val weightRange = -3.0..3.0
+    val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
+    val weightMutationConfig = WeightMutationConfig(weight, .7, (-.1..0.1))
     // Step 3: Initialize components
-    val initialPopulationGenerator = tmazePopulationGenerator(weightRange, random)
+    val nodeInnovationTracker = InnovationTracker()
+    val connectionInnovationTracker = InnovationTracker()
+    val initialPopulationGenerator = tmazePopulationGenerator(weightRange, random, nodeInnovationTracker, connectionInnovationTracker)
     val rewardSide = RewardSide.values().random(random)
     val task = createTMaze(rewardSide, random)
     val environment = TmazeEnvironment(task)
-    val sensorInputGenerator = SensorInputGenerator(environment)
+
     val fitnessEvaluator = object : FitnessEvaluator {
-        val f = TmazeFitnessEvaluator(RewardSide.LEFT, random)
+        val f = TmazeFitnessEvaluator(environment)
         override fun calculateFitness(genome: NetworkGenome): Double {
 //            f.environment.reset()
 //            println("Initial state\n ${renderEnvironmentAsString(f.environment)}\n")
@@ -40,9 +55,10 @@ fun main() {
         weightRange,
         listOf(ActivationFunction.SIGMOID),
         random,
-        InnovationTracker(),
-        InnovationTracker(),
-        SingleActivationFunctionSelection(ActivationFunction.SIGMOID)
+        nodeInnovationTracker,
+        connectionInnovationTracker,
+        SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
+        weightMutationConfig
     )
     val genomeMutator = DefaultGenomeMutator(
         createMutationOperations(geneticOperators),
@@ -78,7 +94,9 @@ fun main() {
         val species = speciation.speciesList
         val maxFitness = currentPopulation.maxOfOrNull { it.fitness ?: 0.0 }
         val minFitness = currentPopulation.minOfOrNull { it.fitness ?: Double.MAX_VALUE }
-        println("Generation $generation: Max Fitness = $maxFitness, Species Count = ${species.size}")
+        println(
+            "Generation $generation: Max Fitness (${currentPopulation.count{ it.fitness == null}}) = $maxFitness, Species Count = ${species.size}"
+        )
         species.filter { it.members.isNotEmpty()}.forEachIndexed { index, s ->
             val speciesMaxFitness = s.members.maxOfOrNull { it.fitness ?: 0.0 }
             val speciesMinFitness = s.members.minOfOrNull { it.fitness ?: Double.MAX_VALUE }
@@ -91,7 +109,9 @@ fun main() {
         }
     }
 }
-fun tmazePopulationGenerator(weightRange: ClosedRange<Double>, random: Random): InitialPopulationGenerator {
+fun tmazePopulationGenerator(weightRange: ClosedRange<Double>, random: Random,
+nodeInnovationTracker: InnovationTracker,
+connectionInnovationTracker: InnovationTracker,): InitialPopulationGenerator {
     return SimpleInitialPopulationGenerator(
         inputNodeCount = 3, // Adjusted for TMaze input (agent's x position, agent's y position, and reward side),
         outputNodeCount = 3, // Adjusted for TMaze actions (MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT)
@@ -99,7 +119,9 @@ fun tmazePopulationGenerator(weightRange: ClosedRange<Double>, random: Random): 
         connectionDensity = 1.0,
         activationFunctions = listOf(ActivationFunction.SIGMOID), // Using SIGMOID for activation
         random = random,
-        randomWeight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
+        randomWeight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive),
+        nodeInnovationTracker = nodeInnovationTracker,
+        connectionInnovationTracker = connectionInnovationTracker
     )
 }
 

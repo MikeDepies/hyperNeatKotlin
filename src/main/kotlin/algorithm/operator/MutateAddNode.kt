@@ -10,11 +10,13 @@ import kotlin.random.Random
 interface MutateAddNodeOperator : GeneticOperator {
     val random: Random
     val innovationTracker: InnovationTracker
+    val connectionInnovationTracker: InnovationTracker
     val activationFunctionSelection: ActivationFunctionSelection
 }
 class MutateAddNodeOperatorImpl(
     override val random: Random,
     override val innovationTracker: InnovationTracker,
+    override val connectionInnovationTracker: InnovationTracker,
     override val activationFunctionSelection: ActivationFunctionSelection
 ) : MutateAddNodeOperator {
     override fun apply(genome: NetworkGenome): NetworkGenome {
@@ -31,7 +33,7 @@ class MutateAddNodeOperatorImpl(
         // Create two new connections
         val newConnection1 =
             ConnectionGenome(
-                id = innovationTracker.getNextInnovationNumber(),
+                id = connectionInnovationTracker.getNextInnovationNumber(),
                 inputNode = connectionToSplit.inputNode,
                 outputNode = newNode,
                 weight = 1.0,
@@ -39,7 +41,7 @@ class MutateAddNodeOperatorImpl(
             )
         val newConnection2 =
             ConnectionGenome(
-                id = innovationTracker.getNextInnovationNumber(),
+                id = connectionInnovationTracker.getNextInnovationNumber(),
                 inputNode = newNode,
                 outputNode = connectionToSplit.outputNode,
                 weight = connectionToSplit.weight,

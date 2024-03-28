@@ -6,6 +6,7 @@ import algorithm.crossover.RandomCrossover
 import algorithm.operator.*
 import algorithm.weight.SimpleRandomWeight
 import algorithm.weight.GaussianRandomWeight
+import algorithm.weight.RandomWeight
 import genome.ActivationFunction
 import kotlin.random.Random
 
@@ -17,20 +18,25 @@ data class GeneticOperators(
     val mutateActivationFunction: MutateActivationFunctionOperator,
     val mutateConnectionEnabled: GeneticOperator
 )
-
+data class WeightMutationConfig(
+    val randomWeight: RandomWeight,
+    val perturbationChance: Double,
+    val perturbationAmount: ClosedRange<Double>
+)
 fun createDefaultGeneticOperators(
     weightRange: ClosedRange<Double>,
     activationFunctions: List<ActivationFunction>,
     random: Random,
     nodeInnovationTracker: InnovationTracker,
     connectionInnovationTracker: InnovationTracker,
-    activationSelection: ActivationFunctionSelection
+    activationSelection: ActivationFunctionSelection,
+    weightMutationConfig: WeightMutationConfig
 ): GeneticOperators {
     return GeneticOperators(
         RandomCrossover(random),
-        MutateAddNodeOperatorImpl(random, nodeInnovationTracker, activationSelection),
+        MutateAddNodeOperatorImpl(random, nodeInnovationTracker, connectionInnovationTracker, activationSelection),
         MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightRange),
-        MutateWeightsOperatorImpl(GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive), random,.7, -0.01..0.01),
+        MutateWeightsOperatorImpl(weightMutationConfig.randomWeight, random, weightMutationConfig.perturbationChance, weightMutationConfig.perturbationAmount),
         MutateRandomActivationFunction(random, activationFunctions),
         MutateConnectionEnabledOperatorImpl(random)
     )

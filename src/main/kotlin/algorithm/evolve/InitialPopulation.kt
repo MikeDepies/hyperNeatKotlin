@@ -1,5 +1,6 @@
 package algorithm.evolve
 
+import algorithm.InnovationTracker
 import genome.NetworkGenome
 import genome.NodeType
 import genome.NodeGenome
@@ -19,25 +20,42 @@ class SimpleInitialPopulationGenerator(
     private val connectionDensity: Double, // Between 0.0 and 1.0
     private val activationFunctions: List<ActivationFunction>,
     private val random: Random,
-    private val randomWeight: RandomWeight
+    private val randomWeight: RandomWeight,
+    private val nodeInnovationTracker: InnovationTracker,
+    private val connectionInnovationTracker: InnovationTracker
 ) : InitialPopulationGenerator {
 
-    override fun generatePopulation(size: Int): List<NetworkGenome> =
-        List(size) { generateSingleGenome() }
+    override fun generatePopulation(size: Int): List<NetworkGenome> {
+        val baseGenome = generateSingleGenome()
+        return List(size) {
+            baseGenome.copy(
+                connectionGenes = baseGenome.connectionGenes.map { it.copy(weight = randomWeight()) },
+                nodeGenomes = baseGenome.nodeGenomes.map { 
+                    it.copy(
+                        bias = randomWeight(),
+                        activationFunction = if (activationFunctions.size > 1) activationFunctions.random(random) else it.activationFunction
+                    ) 
+                }
+            )
+        }
+    }
 
     override fun generateSingleGenome(): NetworkGenome {
         val totalNodeCount = inputNodeCount + outputNodeCount + hiddenNodeCount
-        val nodes = (1..totalNodeCount).map { id ->
-            NodeGenome(
-                id = id,
-                type = when {
-                    id <= inputNodeCount -> NodeType.INPUT
-                    id <= inputNodeCount + hiddenNodeCount -> NodeType.HIDDEN
-                    else -> NodeType.OUTPUT
-                },
+        val nodes = mutableListOf<NodeGenome>()
+        for (i in 1..totalNodeCount) {
+            val type = when {
+                i <= inputNodeCount -> NodeType.INPUT
+                i <= inputNodeCount + hiddenNodeCount -> NodeType.HIDDEN
+                else -> NodeType.OUTPUT
+            }
+            val nodeId = nodeInnovationTracker.getNextInnovationNumber()
+            nodes.add(NodeGenome(
+                id = nodeId,
+                type = type,
                 activationFunction = activationFunctions.random(),
-                bias = randomWeight() // Biases are now initialized to random values within a specified range
-            )
+                bias = randomWeight()
+            ))
         }
 
         val possibleConnections = nodes.flatMap { outputNode ->
@@ -49,8 +67,9 @@ class SimpleInitialPopulationGenerator(
         val connections = mutableListOf<ConnectionGenome>()
         if (connectionDensity == 1.0) {
             possibleConnections.forEach { (inputNode, outputNode) ->
+                val connectionId = connectionInnovationTracker.getNextInnovationNumber()
                 connections.add(ConnectionGenome(
-                    id = connections.size + 1,
+                    id = connectionId,
                     inputNode = inputNode,
                     outputNode = outputNode,
                     weight = randomWeight(),
@@ -59,10 +78,11 @@ class SimpleInitialPopulationGenerator(
             }
         } else {
             val desiredConnectionCount = (possibleConnections.size * connectionDensity).toInt()
-            while (connections.size < desiredConnectionCount) {
-                val (inputNode, outputNode) = possibleConnections.random(random)
+            val selectedConnections = possibleConnections.shuffled(random).take(desiredConnectionCount)
+            selectedConnections.forEach { (inputNode, outputNode) ->
+                val connectionId = connectionInnovationTracker.getNextInnovationNumber()
                 connections.add(ConnectionGenome(
-                    id = connections.size + 1,
+                    id = connectionId,
                     inputNode = inputNode,
                     outputNode = outputNode,
                     weight = randomWeight(),

@@ -3,7 +3,6 @@ package main
 import algorithm.*
 import algorithm.activation.SingleActivationFunctionSelection
 import algorithm.crossover.BiasedCrossover
-import algorithm.crossover.RandomCrossover
 import algorithm.evolve.*
 import algorithm.fitnessevaluator.MazeFitnessEvaluatorSensor
 import algorithm.fitnessevaluator.SensorInputGenerator
@@ -11,23 +10,49 @@ import algorithm.weight.GaussianRandomWeight
 import environment.RewardSide
 import environment.TmazeEnvironment
 import environment.createTMaze
-import environment.renderEnvironmentAsString
 import environment.hasPathToGoal
+import environment.renderEnvironmentAsString
 import genome.ActivationFunction
 import genome.NetworkGenome
-import kotlin.random.Random
 import kotlin.collections.listOf
+import kotlin.random.Random
+
+private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
+
+private fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
+    return listOf(
+             MutationOperation(0.04, geneticOperators.mutateAddConnection),
+             MutationOperation(0.01, geneticOperators.mutateAddNode),
+             MutationOperation(0.9, geneticOperators.mutateWeights),
+            MutationOperation(0.00, geneticOperators.mutateActivationFunction),
+            // MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
+    )
+}
 
 fun main() {
-    val random = Random(231)
+    val random = Random(1)
+    val compatabilityThreshold = .3
+    val populationSize = 100 // Adjusted for Iris dataset size
+    val crossMutateChance = 0.4
     val weightRange = -3.0..3.0
+    val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
+    val weightMutationConfig = WeightMutationConfig(weight, .9, (-.1..0.1))
     // Step 3: Initialize components
-    val initialPopulationGenerator = tmazePopulationGeneratorSensor2(weightRange, random)
-    val rewardSides = listOf(RewardSide.RANDOM)//RewardSide.values()
-    val maps = (1..100).map {
-        val rewardSide = rewardSides.random(random)
-        createTMaze(rewardSide, random)
-    }
+    val nodeInnovationTracker = InnovationTracker()
+    val connectionInnovationTracker = InnovationTracker()
+    val initialPopulationGenerator =
+            tmazePopulationGeneratorSensor2(
+                    weightRange,
+                    random,
+                    nodeInnovationTracker,
+                    connectionInnovationTracker
+            )
+    val rewardSides = RewardSide.values().takeLast(1)
+    val maps =
+            (1..5).map {
+                val rewardSide = rewardSides.random(random)
+                createTMaze(rewardSide, random)
+            }
     maps.forEachIndexed { index, maze ->
         val environment = TmazeEnvironment(maze)
         val hasPathToGoal = hasPathToGoal(environment)
@@ -49,6 +74,7 @@ fun main() {
                                 )
                         totalFitness += f.calculateFitness(genome)
                     }
+
                     return totalFitness / numberOfEvaluations
                 }
             }
@@ -58,17 +84,17 @@ fun main() {
                     weightRange,
                     listOf(ActivationFunction.SIGMOID),
                     random,
-                    InnovationTracker(),
-                    InnovationTracker(),
-                    SingleActivationFunctionSelection(ActivationFunction.SIGMOID)
+                    nodeInnovationTracker,
+                    connectionInnovationTracker,
+                    SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
+                    weightMutationConfig
             )
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)
-    val compatabilityThreshold = .6
+
     val genomeCompatibility = GenomeCompatibilityTraditional(createDefaultCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
-    val populationSize = 100 // Adjusted for Iris dataset size
-    val crossMutateChance = 0.7
+
 
     val neatProcess =
             NEATProcessWithDirectReplacement(
@@ -92,10 +118,10 @@ fun main() {
         currentPopulation = neatProcess.executeGeneration(currentPopulation)
         // Step 6: Logging and observation
         val species = speciation.speciesList
-        val maxFitness = currentPopulation.maxOfOrNull { it.fitness ?: 0.0 }
+        val maxFitness = currentPopulation.maxOfOrNull { it.fitness ?: Double.MIN_VALUE }
         val minFitness = currentPopulation.minOfOrNull { it.fitness ?: Double.MAX_VALUE }
         println(
-                "Generation $generation: Max Fitness = $maxFitness, Species Count = ${species.size}"
+                "Generation $generation: Max Fitness (${currentPopulation.count{ it.fitness == null}}) = $maxFitness, Species Count = ${species.size}"
         )
         species.filter { it.members.isNotEmpty() }.forEachIndexed { index, s ->
             val speciesMaxFitness = s.members.maxOfOrNull { it.fitness ?: 0.0 }
@@ -105,16 +131,18 @@ fun main() {
             )
         }
         // Add your condition to check for an acceptable solution and break if found
-//        if (maxFitness != null && maxFitness > 1.5) { // Break condition for high fitness
-//            println("High fitness achieved. Stopping...")
-//            break
-//        }
+        //        if (maxFitness != null && maxFitness > 1.5) { // Break condition for high fitness
+        //            println("High fitness achieved. Stopping...")
+        //            break
+        //        }
     }
 }
 
 fun tmazePopulationGeneratorSensor2(
         weightRange: ClosedRange<Double>,
-        random: Random
+        random: Random,
+        nodeInnovationTracker: InnovationTracker,
+        connectionInnovationTracker: InnovationTracker,
 ): InitialPopulationGenerator {
     return SimpleInitialPopulationGenerator(
             inputNodeCount =
@@ -133,6 +161,8 @@ fun tmazePopulationGeneratorSensor2(
                             1.0,
                             weightRange.start,
                             weightRange.endInclusive
-                    )
+                    ),
+                    nodeInnovationTracker,
+                    connectionInnovationTracker
     )
 }

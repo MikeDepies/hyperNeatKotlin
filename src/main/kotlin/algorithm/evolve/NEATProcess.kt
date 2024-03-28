@@ -88,7 +88,7 @@ class NEATProcessImpl(
         val speciesGroups = selectedGenomes.groupBy { it.speciesId }
 
         speciesGroups.values.forEach { group ->
-            val shuffledGenomes = group.shuffled()
+            val shuffledGenomes = group.shuffled(random)
 
             // Calculate the number of offspring this species should produce
             val offspringCount = calculateOffspringCount(group, populationSize)
@@ -219,7 +219,12 @@ class NEATProcessWithDirectReplacement(
                 offspring.add(child)
             }
         }
-
+        if (selectedGenomes.any { it.fitness == null }) {
+            throw IllegalStateException("Not all genomes have been assigned a fitness value.")
+        }
+        if (selectedGenomes.any { it.speciesId == null }) {
+            throw IllegalStateException("Not all genomes have been assigned a species.")
+        }
         // Adjust the total offspring count to match the population size exactly
         adjustOffspringCount(offspring, offspringCountSoFar, selectedGenomes)
 
@@ -233,8 +238,8 @@ class NEATProcessWithDirectReplacement(
             repeat(adjustment) {
                 val parent = selectedGenomes.random(random)
                 val child = when (random.nextDouble()) {
-                    in 0.0..crossMutateChance -> genomeMutator.mutateGenome(parent)
-                    else -> parent // In case mutation is not chosen, just clone the parent
+                    in 0.0..crossMutateChance -> crossMutation.crossover(parent, parent)
+                    else -> genomeMutator.mutateGenome(parent)
                 }
                 offspring.add(child)
             }
@@ -253,15 +258,20 @@ class NEATProcessWithDirectReplacement(
 
     override fun executeGeneration(currentPopulation: List<NetworkGenome>): List<NetworkGenome> {
         val genomes = if (currentPopulation.isEmpty()) {
-            List(populationSize) { initialPopulationGenerator.generateSingleGenome() }
+            initialPopulationGenerator.generatePopulation(populationSize)
         } else {
             currentPopulation
         }
         
         genomes.forEach { it.fitness = fitnessEvaluator.calculateFitness(it) }
+        if (genomes.any { it.fitness == null }) {
+            throw IllegalStateException("Not all genomes have been assigned a fitness value.")
+        }
         categorizeIntoSpecies(genomes)
         shareFitnessWithinSpecies(speciation.speciesList)
-        
+        if (genomes.any { it.speciesId == null }) {
+            throw IllegalStateException("Not all genomes have been assigned a species.")
+        }
         // Select elites based on fitness per species
         val elitesPerSpecies = selectElitesPerSpecies(speciation.speciesList)
         
@@ -270,14 +280,14 @@ class NEATProcessWithDirectReplacement(
         
         // Combine elites from all species with the offspring
         val combinedOffspring = combineElitesWithOffspring(offspring, elitesPerSpecies)
-        
+       
         return replaceLeastFit(genomes, combinedOffspring)
     }
 
     private fun selectElitesPerSpecies(speciesList: List<Species>): List<NetworkGenome> {
         val elites = mutableListOf<NetworkGenome>()
         speciesList.forEach { species ->
-            elites.addAll(species.members.sortedByDescending { it.fitness }.take(numberOfElites))
+            elites.addAll(species.members.filter{ it.fitness !=null }.sortedByDescending { it.fitness }.take(numberOfElites))
         }
         return elites
     }

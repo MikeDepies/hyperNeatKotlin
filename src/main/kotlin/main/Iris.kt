@@ -1,44 +1,58 @@
 package main
 
+import algorithm.*
 import algorithm.fitnessevaluator.IrisFitnessEvaluator
 import algorithm.activation.SingleActivationFunctionSelection
+import algorithm.createMutationOperations
 import algorithm.crossover.RandomCrossover
 import algorithm.crossover.BiasedCrossover
 import genome.ActivationFunction
 import genome.NetworkGenome
 import algorithm.evolve.*
 import algorithm.weight.GaussianRandomWeight
-import algorithm.createDefaultGeneticOperators
-import algorithm.InnovationTracker
-import algorithm.DefaultGenomeMutator
-import algorithm.createMutationOperations
 import kotlin.random.Random
 
+private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
+
+private fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
+    return listOf(
+            MutationOperation(0.04, geneticOperators.mutateAddConnection),
+            MutationOperation(0.01, geneticOperators.mutateAddNode),
+            MutationOperation(0.9, geneticOperators.mutateWeights),
+            MutationOperation(0.04, geneticOperators.mutateActivationFunction),
+            MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
+    )
+}
 fun main() {
     val random = Random(0)
     val weightRange = -30.0..30.0
     // Step 3: Initialize components
-    val initialPopulationGenerator = irisPopulationGenerator(weightRange, random)
+    val nodeInnovationTracker = InnovationTracker()
+    val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
+    val weightMutationConfig = WeightMutationConfig(weight, .7, (-.1..0.1))
+    val connectionInnovationTracker = InnovationTracker()
+    val initialPopulationGenerator = irisPopulationGenerator(weightRange, random, nodeInnovationTracker, connectionInnovationTracker)
     val fitnessEvaluator = IrisFitnessEvaluator(random)
     val crossMutation = RandomCrossover(random)
     val geneticOperators = createDefaultGeneticOperators(
         weightRange,
         listOf(ActivationFunction.SIGMOID),
         random,
-        InnovationTracker(),
-        InnovationTracker(),
-        SingleActivationFunctionSelection(ActivationFunction.SIGMOID)
+        nodeInnovationTracker,
+        connectionInnovationTracker,
+        SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
+        weightMutationConfig
     )
     val genomeMutator = DefaultGenomeMutator(
         createMutationOperations(geneticOperators),
         random
     )
-    val compatabilityThreshold = 1.0
-    val genomeCompatibility = GenomeCompatibilityTraditional(createDefaultCoefficients())
+    val compatabilityThreshold = 4.0
+    val genomeCompatibility = GenomeCompatibilityTraditional(createCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
     val populationSize = 150 // Adjusted for Iris dataset size
-    val crossMutateChance = 0.1
+    val crossMutateChance = 0.9
 
     val neatProcess = NEATProcessWithDirectReplacement(
         initialPopulationGenerator,
@@ -77,7 +91,7 @@ fun main() {
     }
 }
 
-fun irisPopulationGenerator(weightRange: ClosedRange<Double>, random: Random): InitialPopulationGenerator {
+fun irisPopulationGenerator(weightRange: ClosedRange<Double>, random: Random, nodeInnovationTracker: InnovationTracker, connectionInnovationTracker: InnovationTracker): InitialPopulationGenerator {
     return SimpleInitialPopulationGenerator(
         inputNodeCount = 4, // Adjusted for Iris input features
         outputNodeCount = 3, // Adjusted for Iris classes
@@ -85,7 +99,9 @@ fun irisPopulationGenerator(weightRange: ClosedRange<Double>, random: Random): I
         connectionDensity = 1.0,
         activationFunctions = listOf(ActivationFunction.SIGMOID), // Added RELU for variety
         random = random,
-        randomWeight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
+        randomWeight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive),
+        nodeInnovationTracker = nodeInnovationTracker,
+        connectionInnovationTracker = connectionInnovationTracker
     )
 }
 

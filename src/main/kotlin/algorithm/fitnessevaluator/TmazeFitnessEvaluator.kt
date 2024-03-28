@@ -8,9 +8,9 @@ import environment.*
 import genome.NetworkGenome
 import kotlin.random.Random
 
-class TmazeFitnessEvaluator(val rewardSide: RewardSide, val random: Random) : FitnessEvaluator {
+class TmazeFitnessEvaluator(val environment: TmazeEnvironment) : FitnessEvaluator {
 
-    val environment = TmazeEnvironment(createTMaze(rewardSide, random))
+    
 
     override fun calculateFitness(genome: NetworkGenome): Double {
         var fitness = 1.0
@@ -46,7 +46,7 @@ class MazeFitnessEvaluatorSensor(
 ) : FitnessEvaluator {
 
     override fun calculateFitness(genome: NetworkGenome): Double {
-        var fitness = 1.0
+        var fitness = 0.0
         val stepsAllowed = 100 // Maximum steps allowed to find the reward
         environment.reset()
         val mazeBoundaries = deriveMazeBoundaries(environment.environment)
