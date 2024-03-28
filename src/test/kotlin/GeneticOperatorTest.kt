@@ -20,7 +20,7 @@ class GeneticOperatorTest : BehaviorSpec({
         val networkGenome = NetworkGenome(nodeGenomes, connectionGenomes)
 
         `when`("mutate add node is applied") {
-            val mutateAddNode = MutateAddNodeOperatorImpl(random, InnovationTracker(), SingleActivationFunctionSelection(ActivationFunction.IDENTITY))
+            val mutateAddNode = MutateAddNodeOperatorImpl(random, InnovationTracker(),  InnovationTracker(), SingleActivationFunctionSelection(ActivationFunction.IDENTITY))
             val mutatedGenome = mutateAddNode.apply(networkGenome)
             then("it should add a new node") {
                 mutatedGenome.nodeGenomes.size shouldBe 3
@@ -37,7 +37,7 @@ class GeneticOperatorTest : BehaviorSpec({
         }
 
         `when`("mutate weights is applied") {
-            val mutateWeights = MutateWeightsOperatorImpl(SimpleRandomWeight(random, (-1.0..1.0)))
+            val mutateWeights = MutateWeightsOperatorImpl(SimpleRandomWeight(random, (-1.0..1.0)), random, .9)
             val mutatedGenome = mutateWeights.apply(networkGenome)
             then("it should update the weight of connections") {
                 mutatedGenome.connectionGenes.forEach { it.weight shouldNotBe 0.5 }

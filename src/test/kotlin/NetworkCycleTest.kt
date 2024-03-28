@@ -43,7 +43,7 @@ class NetworkCycleTest : BehaviorSpec({
 
         When("processing the network with cycles") {
             val processor = NetworkProcessorStateful(cyclicNetwork)
-            val output = processor.feedforward(listOf(1.0), maxIterations = 10)
+            val output = processor.feedforward(listOf(1.0), )
 
             Then("it should converge to a stable output within max iterations") {
                 val expectedValue = 0.997 // Hypothetical expected value
@@ -101,7 +101,7 @@ class NetworkCycleTest : BehaviorSpec({
             val cyclicProcessor = NetworkProcessorStateful(cyclicNetwork)
             val acyclicProcessor = NetworkProcessorStateful(acyclicNetwork)
 
-            val cyclicOutput = cyclicProcessor.feedforward(listOf(1.0), maxIterations = 10)
+            val cyclicOutput = cyclicProcessor.feedforward(listOf(1.0))
             val acyclicOutput = acyclicProcessor.feedforward(listOf(1.0))
 
             Then("the output should reflect the presence or absence of cycles correctly") {
