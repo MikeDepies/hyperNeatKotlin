@@ -20,7 +20,9 @@ class MutateAddNodeOperatorImpl(
     override val activationFunctionSelection: ActivationFunctionSelection
 ) : MutateAddNodeOperator {
     override fun apply(genome: NetworkGenome): NetworkGenome {
-        val randomConnectionIndex = random.nextInt(genome.connectionGenes.size)
+        val enabledConnections = genome.connectionGenes.filter { it.enabled }
+        if (enabledConnections.isEmpty()) return genome
+        val randomConnectionIndex = random.nextInt(enabledConnections.size)
         val connectionToSplit = genome.connectionGenes[randomConnectionIndex]
 
         // Disable the old connection
