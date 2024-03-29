@@ -25,6 +25,11 @@ class DefaultActivationFunctionMapper : ActivationFunctionMapper {
         ActivationFunction.SIGMOID -> { x -> 1 / (1 + Math.exp(-x)) }
         ActivationFunction.TANH -> { x -> Math.tanh(x) }
         ActivationFunction.RELU -> { x -> Math.max(0.0, x) }
+        ActivationFunction.GAUSSIAN -> { x -> Math.exp(-Math.pow(x, 2.0)) }
+        ActivationFunction.SINE -> { x -> Math.sin(x) }
+        ActivationFunction.COS -> { x -> Math.cos(x) }
+        ActivationFunction.ABS -> { x -> Math.abs(x) }
+        ActivationFunction.STEP -> { x -> if (x < 0) 0.0 else 1.0 }
     }
 }
 

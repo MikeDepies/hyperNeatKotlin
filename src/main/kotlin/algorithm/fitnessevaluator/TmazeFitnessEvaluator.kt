@@ -74,6 +74,7 @@ class MazeFitnessEvaluatorSensor(
     }
 }
 
+
 class SensorInputGenerator(val environment: TmazeEnvironment) {
 
     private val directions =
