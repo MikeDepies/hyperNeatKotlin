@@ -8,6 +8,7 @@ import algorithm.fitnessevaluator.XorFitnessEvaluator
 import algorithm.weight.GaussianRandomWeight
 import genome.ActivationFunction
 import genome.NetworkGenome
+import genome.render
 import kotlin.random.Random
 
 private fun createXorCoefficients() = Coefficients(1.0, 1.0, 0.4)
@@ -15,7 +16,7 @@ private fun createXorCoefficients() = Coefficients(1.0, 1.0, 0.4)
 private fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
     return listOf(
         MutationOperation(.04, geneticOperators.mutateAddConnection),
-        MutationOperation(.01, geneticOperators.mutateAddNode),
+        MutationOperation(.001, geneticOperators.mutateAddNode),
         MutationOperation(0.9, geneticOperators.mutateWeights),
         // MutationOperation(0.04, geneticOperators.mutateActivationFunction),
         MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
@@ -66,7 +67,7 @@ fun main() {
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
     val populationSize = 500
-    val crossMutateChance = 0.7
+    val crossMutateChance = 0.0
 
     val neatProcess =
         NEATProcessWithDirectReplacement(
@@ -103,11 +104,14 @@ fun main() {
         }
         // Step 6: Logging and observation
         val species = speciation.speciesList
-        val maxFitness = currentPopulation.maxOfOrNull { it.fitness ?: 0.0 }
-        val minFitness = currentPopulation.minOfOrNull { it.fitness ?: Double.MAX_VALUE }
+        val maxFitnessGenome = species.flatMap { it.members }.maxByOrNull { it.fitness ?: 0.0 }
+        val maxFitness = maxFitnessGenome?.fitness ?: 0.0
+
+        // val minFitnvess = currentPopulation.minOfOrNull { it.fitness ?: Double.MAX_VALUE }
         println(
                 "Generation $generation: Max Fitness (${currentPopulation.count{ it.fitness == null}}) = $maxFitness, Species Count = ${species.size}"
         )
+        println(maxFitnessGenome?.render())
         species.filter { it.members.isNotEmpty() }.forEachIndexed { index, s ->
             val speciesMaxFitness = s.members.maxOfOrNull { it.fitness ?: 0.0 }
             val speciesMinFitness =
