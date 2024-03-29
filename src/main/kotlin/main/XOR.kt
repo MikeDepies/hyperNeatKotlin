@@ -58,7 +58,7 @@ fun main() {
                 ActivationFunction.SIGMOID
             ),
             weightMutationConfig,
-            true, true, true, true
+
         )
 
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)

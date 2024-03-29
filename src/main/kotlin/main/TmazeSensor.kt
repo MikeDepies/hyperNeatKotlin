@@ -49,7 +49,7 @@ fun main() {
             )
     val rewardSides = RewardSide.values().takeLast(1)
     val maps =
-            (1..5).map {
+            (1..50).map {
                 val rewardSide = rewardSides.random(random)
                 createTMaze(rewardSide, random)
             }

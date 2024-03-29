@@ -25,11 +25,11 @@ private fun createMutationOperations(geneticOperators: GeneticOperators): List<M
 }
 fun main() {
     val random = Random(0)
-    val weightRange = -30.0..30.0
+    val weightRange = -3.0..3.0
     // Step 3: Initialize components
     val nodeInnovationTracker = InnovationTracker()
     val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
-    val weightMutationConfig = WeightMutationConfig(weight, .7, (-.1..0.1))
+    val weightMutationConfig = WeightMutationConfig(weight, .7, (-.001..0.001))
     val connectionInnovationTracker = InnovationTracker()
     val initialPopulationGenerator = irisPopulationGenerator(weightRange, random, nodeInnovationTracker, connectionInnovationTracker)
     val fitnessEvaluator = IrisFitnessEvaluator(random)
@@ -50,7 +50,8 @@ fun main() {
     val genomeCompatibility = GenomeCompatibilityTraditional(createCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
-    val populationSize = 150 // Adjusted for Iris dataset size
+    val maxGenerations = 5000 // Adjusted for complexity of Iris problem
+    val populationSize = 100 // Adjusted for Iris dataset size
     val crossMutateChance = 0.9
 
     val neatProcess = NEATProcessWithDirectReplacement(
@@ -63,12 +64,11 @@ fun main() {
         populationSize,
         crossMutateChance,
         random,
-        0.2
+        0.5
     )
 
     // Step 5: Setup and run the NEAT algorithm
     var currentPopulation = emptyList<NetworkGenome>()
-    val maxGenerations = 500 // Adjusted for complexity of Iris problem
     for (generation in 1..maxGenerations) {
         print("Generation $generation: ")
         currentPopulation = neatProcess.executeGeneration(currentPopulation)
@@ -83,10 +83,10 @@ fun main() {
             println("Species $index: Best Fitness = $speciesMaxFitness, Worst Fitness = $speciesMinFitness")
         }
         // Add your condition to check for an acceptable solution and break if found
-        if (maxFitness != null && maxFitness > 0.95) { // Break condition for high fitness
-            println("High fitness achieved. Stopping...")
-            break
-        }
+//        if (maxFitness != null && maxFitness > 0.95) { // Break condition for high fitness
+//            println("High fitness achieved. Stopping...")
+//            break
+//        }
     }
 }
 
