@@ -1,104 +1,64 @@
 package coevolution
-import genome.NetworkGenome
-// 1. Define a population of candidate solutions and a population of tests.
-// 2. Evaluate the performance of each candidate solution against each test.
-// 3. Assign a score to each candidate solution based on its performance.
-// 4. Use resource limitation to ensure diversity: allocate a fixed amount of resources (e.g., reproduction opportunities) among candidate solutions.
-// 5. Distribute resources based on the novelty or uniqueness of the solution, ensuring that resources are not monopolized by a subset of similar solutions.
-// 6. Implement minimal criteria for survival: solutions must meet a basic level of performance to be eligible for resources.
-// 7. Allow for the evolution of both candidate solutions and tests to promote coevolution and maintain a dynamic and challenging environment.
-// 8. Periodically introduce new tests to the population to prevent overfitting and to encourage the development of generalized solutions.
-// 9. Implement mechanisms for speciation or niching to further promote diversity within the population of candidate solutions.
-// 10. Iterate through the evolutionary process, continuously selecting, reproducing, and mutating candidate solutions and tests, guided by the principles of diversity preservation and minimal criterion coevolution.
 
-interface Population<T> {
-    fun initialize(size: Int)
-    fun evaluate()
-    fun select(): List<T>
-    fun reproduce(selected: List<T>): List<T>
-    fun mutate(individuals: List<T>): List<T>
+import java.util.LinkedList
+import kotlin.math.min
+interface Agent {
+    fun navigate(maze: Maze): NavigationResult
+    fun evolve(): Agent
 }
 
-interface CandidateSolution {
-    fun evaluate(problems: List<Problem>): Double
+interface Maze {
+    val resourceLimit: Int
+    var resourceUsage: Int
+    fun isResourceAvailable(): Boolean = resourceUsage < resourceLimit
+    fun incrementResourceUsage() {
+        if (isResourceAvailable()) resourceUsage++
+    }
+    fun generateMaze(): Maze
+    fun mutate(): Maze
 }
-
-interface Problem {
-    fun evaluate(candidateSolution: CandidateSolution): Double
-}
-
 interface EvolutionaryProcess {
-    fun runEvolution(cycles: Int)
+    fun evolveAgents(agents: List<Agent>): List<Agent>
+    fun evolveMazes(mazes: List<Maze>): List<Maze>
+    fun evaluateAgentsInMazes(agents: List<Agent>, mazes: List<Maze>): EvaluationResult
+    fun applyResourceLimitation(mazes: List<Maze>)
 }
+data class NavigationResult(val success: Boolean, val pathTaken: List<Position>)
 
-interface DiversityMechanism<T> {
-    fun ensureDiversity(population: List<T>)
-}
+data class EvaluationResult(val agentPerformances: Map<Agent, List<NavigationResult>>)
 
-interface SurvivalCriteria {
-    fun meetsCriteria(candidateSolution: CandidateSolution): Boolean
-}
+data class Position(val x: Int, val y: Int)
+class MCCProcess : EvolutionaryProcess {
+    override fun evolveAgents(agents: List<Agent>): List<Agent> {
+        // Implement the logic to evolve agents here.
+        return agents.map { it.evolve() }
+    }
 
-interface Coevolution {
-    fun evolveSolutionsAndProblems(candidateSolutions: Population<CandidateSolution>, problems: Population<Problem>)
-}
+    override fun evolveMazes(mazes: List<Maze>): List<Maze> {
+        // Implement the logic to evolve mazes here, including mutations.
+        return mazes.map { it.mutate() }
+    }
 
-interface Speciation {
-    fun applySpeciation(population: Population<CandidateSolution>)
-}
+    override fun evaluateAgentsInMazes(agents: List<Agent>, mazes: List<Maze>): EvaluationResult {
+        // Implement the evaluation logic here.
+        val agentPerformances = mutableMapOf<Agent, List<NavigationResult>>()
+        agents.forEach { agent ->
+            val results = mutableListOf<NavigationResult>()
+            mazes.filter { it.isResourceAvailable() }.forEach { maze ->
+                results.add(agent.navigate(maze))
+                maze.incrementResourceUsage()
+            }
+            agentPerformances[agent] = results
+        }
+        return EvaluationResult(agentPerformances)
+    }
 
-interface ResourceAllocator<T> {
-    fun allocateResources(population: List<T>)
-}
-
-
-class MCCAlgorithm(
-    private val candidateSolutionPopulation: Population<CandidateSolution>,
-    private val problemPopulation: Population<Problem>,
-    private val diversityMechanism: DiversityMechanism<CandidateSolution>,
-    private val survivalCriteria: SurvivalCriteria,
-    private val coevolution: Coevolution,
-    private val speciation: Speciation,
-    private val resourceAllocator: ResourceAllocator<CandidateSolution>
-) : EvolutionaryProcess {
-
-    override fun runEvolution(cycles: Int) {
-        for (cycle in 1..cycles) {
-            // Step 1: Initialize populations if not already initialized.
-            candidateSolutionPopulation.initialize(100) // Example size
-            problemPopulation.initialize(50) // Example size
-
-            // Step 2: Evaluate the performance of each candidate solution against each problem.
-            candidateSolutionPopulation.evaluate()
-            problemPopulation.evaluate()
-
-            // Step 3: Assign a score to each candidate solution based on its performance.
-            // Note: Assuming the evaluate methods above already assign scores.
-
-            // Step 4: Use resource limitation to ensure diversity.
-            resourceAllocator.allocateResources(candidateSolutionPopulation.select())
-
-            // Step 5: Distribute resources based on the novelty or uniqueness of the solution.
-            // Note: Assuming the resourceAllocator takes care of this based on implementation.
-
-            // Step 6: Implement minimal criteria for survival.
-            val survivors = candidateSolutionPopulation.select().filter { survivalCriteria.meetsCriteria(it) }
-
-            // Step 7: Allow for the evolution of both candidate solutions and problems.
-            coevolution.evolveSolutionsAndProblems(candidateSolutionPopulation, problemPopulation)
-
-            // Step 8: Periodically introduce new problems.
-            // This could be part of the coevolution step or handled separately.
-
-            // Step 9: Implement mechanisms for speciation.
-            speciation.applySpeciation(candidateSolutionPopulation)
-
-            // Step 10: Iterate through the evolutionary process.
-            val selected = candidateSolutionPopulation.select()
-            val reproduced = candidateSolutionPopulation.reproduce(selected)
-            val mutated = candidateSolutionPopulation.mutate(reproduced)
-
-            // Assuming the population update is handled within mutate or reproduce methods.
+    override fun applyResourceLimitation(mazes: List<Maze>) {
+        // Implement the logic to apply resource limitation to mazes here.
+        mazes.forEach { maze ->
+            if (!maze.isResourceAvailable()) {
+                // Handle cases where the maze has reached its resource limit.
+            }
         }
     }
 }
