@@ -138,15 +138,17 @@ class MazeEnvironmentAdapter(
             return false
         }
         val tmazeEnvironment = TmazeEnvironment(mazeEnvironment)
-        if (shortestPathToGoal(tmazeEnvironment) < 5) {
+        if (shortestPathToGoal(tmazeEnvironment) < 1) {
             return false
         }
         val mazeSolverTester = MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment, 100)
         
-        val solvedAgents = agents.count { agent -> mazeSolverTester.canSolveMaze(agent.getModel()) }
+        val solvedAgents = agents.count { agent -> 
+            tmazeEnvironment.reset()
+            mazeSolverTester.canSolveMaze(agent.getModel()) }
         val unsolvedAgents = agents.size - solvedAgents
         
-        return unsolvedAgents > 1 //&& solvedAgents > 1
+        return unsolvedAgents > 90 && solvedAgents > 0
     }
 }
 
