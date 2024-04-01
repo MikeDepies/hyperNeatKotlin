@@ -31,8 +31,8 @@ private fun createMutationOperations(geneticOperators: GeneticOperators): List<M
 
 private fun createMutationOperationsMaze(geneticOperators: GeneticOperators): List<MutationOperation> {
     return listOf(
-        MutationOperation(0.04, geneticOperators.mutateAddConnection),
-        MutationOperation(0.01, geneticOperators.mutateAddNode),
+        MutationOperation(0.4, geneticOperators.mutateAddConnection),
+        MutationOperation(0.1, geneticOperators.mutateAddNode),
         MutationOperation(0.9, geneticOperators.mutateWeights),
         MutationOperation(0.10, geneticOperators.mutateActivationFunction),
         MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
@@ -75,7 +75,7 @@ fun main() {
             nodeInnovationTracker,
             connectionInnovationTracker,
             RandomActivationFunctionSelection(random, ActivationFunction.cppn),
-            weightMutationConfig, //true, true, true, true
+            weightMutationConfig, true, true, true, true
         )
 
     val agentGeneticOperator = createDefaultGeneticOperators(
@@ -85,13 +85,13 @@ fun main() {
         nodeInnovationTracker,
         connectionInnovationTracker,
         SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
-        weightMutationConfig
+        weightMutationConfig, true, true, true, true
     )
     val mazeNetworkGenomeMutator = DefaultGenomeMutator(createMutationOperationsMaze(mazeGeneticOperators), random)
     val mazeGenomeMutator = SimpleMazeGenomeMutator(
         mazeNetworkGenomeMutator,
         random,
-        createMutationParametersWithAdjustedRange(.1, .1, .1, .5, .5)
+        createMutationParametersWithAdjustedRange(.01, .01, .01, .0, .0)
     )
     val agentGenomeMutator = DefaultGenomeMutator(createMutationOperations(agentGeneticOperator), random)
     val batchSize = 20
@@ -111,7 +111,7 @@ fun main() {
                     networkProcessorFactory = networkProcessorFactory,
                     mazeGenome = MazeGenome(
                         networkGenome = networkGenome,
-                        mazeThresholds = MazeThresholds(.2, .5, .5),
+                        mazeThresholds = MazeThresholds(.5, .5, .5),
                         width = 5,
                         height = 5
                     ),
@@ -131,7 +131,7 @@ fun main() {
             println("Generation: $generation")
             println("Successful environments: ${environments.size}")
             println("Successful agents: ${agents.size}")
-            if (generation % 50 == 0) {
+            if (generation % 10 == 0) {
                 environments.forEach { environment ->
                     val mazeEnvironment = environment.getModel()
                     val networkProcessor = networkProcessorFactory.createProcessor(mazeEnvironment.networkGenome)
