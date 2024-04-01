@@ -82,7 +82,7 @@ fun main() {
     val crossMutation = BiasedCrossover(random, 1.0)
     val geneticOperators =
             createDefaultGeneticOperators(
-
+                    crossMutation,
                     listOf(ActivationFunction.SIGMOID),
                     random,
                     nodeInnovationTracker,
@@ -139,7 +139,7 @@ fun main() {
     }
 }
 
-fun tmazePopulationGeneratorSensor2(
+private fun tmazePopulationGeneratorSensor2(
         weightRange: ClosedRange<Double>,
         random: Random,
         nodeInnovationTracker: InnovationTracker,

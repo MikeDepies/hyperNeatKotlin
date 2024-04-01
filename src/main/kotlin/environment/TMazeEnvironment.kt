@@ -160,11 +160,16 @@ fun main() {
         println(renderEnvironmentAsString(mazeEnvironment))
     }
 }
-
 fun hasPathToGoal(environment: TmazeEnvironment): Boolean {
     val visited = mutableSetOf<Position>()
     val queue = ArrayDeque<Position>()
     queue.add(environment.agentPosition)
+    
+    val boundaries = deriveMazeBoundaries(environment.environment)
+    val minX = boundaries.first.x
+    val maxX = boundaries.second.x
+    val minY = boundaries.first.y
+    val maxY = boundaries.second.y
 
     while (queue.isNotEmpty()) {
         val current = queue.removeFirst()
@@ -173,11 +178,11 @@ fun hasPathToGoal(environment: TmazeEnvironment): Boolean {
         }
 
         val neighbors = listOf(
-            Position(current.x + 1, current.y),
-            Position(current.x - 1, current.y),
-            Position(current.x, current.y + 1),
-            Position(current.x, current.y - 1)
-        )
+            Position(current.x + 1, current.y).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY },
+            Position(current.x - 1, current.y).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY },
+            Position(current.x, current.y + 1).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY },
+            Position(current.x, current.y - 1).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY }
+        ).filterNotNull()
 
         neighbors.filter { neighbor ->
             neighbor !in environment.mazeStructure && neighbor !in visited
@@ -189,3 +194,38 @@ fun hasPathToGoal(environment: TmazeEnvironment): Boolean {
 
     return false
 }
+fun shortestPathToGoal(environment: TmazeEnvironment): Int {
+    val visited = mutableSetOf<Position>()
+    val queue = ArrayDeque<Pair<Position, Int>>()
+    queue.add(Pair(environment.agentPosition, 0))
+    
+    val boundaries = deriveMazeBoundaries(environment.environment)
+    val minX = boundaries.first.x
+    val maxX = boundaries.second.x
+    val minY = boundaries.first.y
+    val maxY = boundaries.second.y
+
+    while (queue.isNotEmpty()) {
+        val (current, distance) = queue.removeFirst()
+        if (current == environment.goalPosition) {
+            return distance
+        }
+
+        val neighbors = listOf(
+            Position(current.x + 1, current.y).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY },
+            Position(current.x - 1, current.y).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY },
+            Position(current.x, current.y + 1).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY },
+            Position(current.x, current.y - 1).takeIf { it.x <= maxX && it.y <= maxY && it.x >= minX && it.y >= minY }
+        ).filterNotNull()
+
+        neighbors.filter { neighbor ->
+            neighbor !in environment.mazeStructure && neighbor !in visited
+        }.forEach { neighbor ->
+            visited.add(neighbor)
+            queue.add(Pair(neighbor, distance + 1))
+        }
+    }
+
+    return -1 // Return -1 if no path to goal is found
+}
+

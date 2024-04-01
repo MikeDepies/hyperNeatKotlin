@@ -11,6 +11,7 @@ import genome.NetworkGenome
 interface Agent<M, E> {
     fun mutate(): Agent<M, E>
     fun satisfiesMinimalCriterion(environment: Environment<E, M>): Boolean
+    fun getModel(): M
 }
 
 class MazeSolverAgent(
@@ -20,21 +21,28 @@ class MazeSolverAgent(
 ) : Agent<NetworkGenome, MazeGenome> {
     override fun mutate(): Agent<NetworkGenome, MazeGenome> {
         val mutatedGenome = genomeMutator.mutateGenome(genome)
+        
         return MazeSolverAgent(mutatedGenome, genomeMutator, networkProcessorFactory)
     }
 
     override fun satisfiesMinimalCriterion(environment: Environment<MazeGenome, NetworkGenome>): Boolean {
-        if (environment !is MazeEnvironmentAdapter) return false
+        // if (environment !is MazeEnvironmentAdapter) return false
         val mazeEnvironment = environment.getModel()
-
-        val networkProcessor = networkProcessorFactory.createProcessor(genome)
+        
+        val networkProcessor = networkProcessorFactory.createProcessor(mazeEnvironment.networkGenome)
         val mazeQuery = CPPNMazeQuery(networkProcessor)
         val mazeGenerator = CPPNMazeGenerator(mazeEnvironment.mazeThresholds, mazeEnvironment.width, mazeEnvironment.height)
         val generatedMaze = mazeGenerator.generateMaze(mazeQuery)
+        
         return generatedMaze?.let { maze ->
             val tmazeEnvironment = TmazeEnvironment(maze)
+        
             MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment).canSolveMaze(genome)
         } ?: false
+    }
+
+    override fun getModel(): NetworkGenome {
+        return genome
     }
 }
 
@@ -53,11 +61,12 @@ class MazeSolverTester(
             EnhancedStateEncoderDecoder(mazeBoundaries, sensorInputGenerator)
         val networkProcessor =
             networkProcessorFactory.createProcessor(genome)
-
+        
         for (step in 0 until stepsAllowed) {
+            
             val inputs = enhancedStateEncoderDecoder.encodeAgentState(
                 environment.agentPosition,
-                environment.environment.rewardSide
+                environment.goalPosition
             )
             val output = networkProcessor.feedforward(inputs)
             val action = enhancedStateEncoderDecoder.decodeAction(output)

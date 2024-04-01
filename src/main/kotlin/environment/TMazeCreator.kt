@@ -10,7 +10,6 @@ data class MazeThresholds(
 
 class CPPNMazeGenerator(val mazeThresholds: MazeThresholds, private val width: Int, private val height: Int) {
     
-
     fun generateMaze(mazeQuery: MazeQuery): MazeEnvironment? {
         val mazeStructure = mutableSetOf<Position>()
         var agentPosition: Position? = null
@@ -18,7 +17,10 @@ class CPPNMazeGenerator(val mazeThresholds: MazeThresholds, private val width: I
 
         for (y in 0 until height) {
             for (x in 0 until width) {
-                val output = mazeQuery.query(x.toDouble(), y.toDouble())
+                // Normalize the input coordinates to be between -1 and 1
+                val normalizedX = (x.toDouble() / width) * 2 - 1
+                val normalizedY = (y.toDouble() / height) * 2 - 1
+                val output = mazeQuery.query(normalizedX, normalizedY)
                 val wallProbability = output[0]
                 val agentStartPositionProbability = output[1]
                 val goalPositionProbability = output[2]

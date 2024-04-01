@@ -5,6 +5,7 @@ import environment.*
 import algorithm.network.NetworkProcessorFactory
 import genome.NetworkGenome
 import algorithm.GenomeMutator
+import algorithm.fitnessevaluator.SensorInputGenerator
 import kotlin.random.Random
 
 interface Environment<E, A> {
@@ -92,7 +93,7 @@ class SimpleMazeGenomeMutator(
     }
 }
 class MazeEnvironmentAdapter(
-    private val genomeMutator: GenomeMutator,
+    private val mazeGenomeMutator: MazeGenomeMutator,
     private val networkProcessorFactory: NetworkProcessorFactory,
     private val mazeGenome: MazeGenome,
     override val resourceUsageLimit: Int,
@@ -101,13 +102,13 @@ class MazeEnvironmentAdapter(
     override fun getModel(): MazeGenome = mazeGenome
     override fun mutate(): Environment<MazeGenome, NetworkGenome> {
         // Generate a mutated genome
-        val mutatedGenome = genomeMutator.mutateGenome(mazeGenome.networkGenome)
+        val mutatedGenome = mazeGenomeMutator.mutate(mazeGenome)
 
         // Return a new instance of MazeEnvironmentAdapter with the mutated genome
         return MazeEnvironmentAdapter(
-            genomeMutator,
+            mazeGenomeMutator,
             networkProcessorFactory,
-            MazeGenome(mutatedGenome, mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height),
+            MazeGenome(mutatedGenome.networkGenome, mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height),
             resourceUsageLimit
         )
     }
@@ -132,7 +133,7 @@ class MazeEnvironmentAdapter(
         // For example, ensuring there's a path from the agent to the goal
         return mazeEnvironment?.let { env ->
             val tmazeEnvironment = TmazeEnvironment(env)
-            hasPathToGoal(tmazeEnvironment)
+            shortestPathToGoal(tmazeEnvironment) > 2 && !MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment).canSolveMaze(agent.getModel())
         } ?: false
     }
 }

@@ -60,7 +60,7 @@ class MazeFitnessEvaluatorSensor(
             val inputs =
                     enhancedStateEncoderDecoder.encodeAgentState(
                             environment.agentPosition,
-                            environment.environment.rewardSide
+                            environment.goalPosition
                     )
             val output = networkProcessor.feedforward(inputs)
             val action = enhancedStateEncoderDecoder.decodeAction(output)
@@ -102,25 +102,21 @@ class EnhancedStateEncoderDecoder(
         private val sensorInputGenerator: SensorInputGenerator
 ) {
 
-    fun encodeAgentState(agentPosition: Position, rewardSide: RewardSide): List<Double> {
-        // Encoding the agent's position, the reward side, the maze boundaries, and sensor data into
+    fun encodeAgentState(agentPosition: Position, goalPosition: Position): List<Double> {
+        // Encoding the actual agent's position, the reward side, the goal position, the maze boundaries, and sensor data into
         // a list of doubles
         val mazeWidth = mazeBoundaries.second.x.toDouble() - mazeBoundaries.first.x.toDouble() + 1.0
-        val mazeHeight =
-                mazeBoundaries.second.y.toDouble() - mazeBoundaries.first.y.toDouble() + 1.0
-        val normalizedX = (agentPosition.x.toDouble() - mazeBoundaries.first.x) / mazeWidth
-        val normalizedY = (agentPosition.y.toDouble() - mazeBoundaries.first.y) / mazeHeight
-        val encodedPosition = listOf(normalizedX, normalizedY)
-        val encodedRewardSide =
-                when (rewardSide) {
-                    RewardSide.LEFT -> 0.0
-                    RewardSide.RIGHT -> 1.0
-                    RewardSide.CENTER -> 0.5
-                    RewardSide.RANDOM -> -1.0
-                }
+        val mazeHeight = mazeBoundaries.second.y.toDouble() - mazeBoundaries.first.y.toDouble() + 1.0
+        val normalizedAgentX = (agentPosition.x.toDouble() - mazeBoundaries.first.x) / mazeWidth
+        val normalizedAgentY = (agentPosition.y.toDouble() - mazeBoundaries.first.y) / mazeHeight
+        val normalizedGoalX = (goalPosition.x.toDouble() - mazeBoundaries.first.x) / mazeWidth
+        val normalizedGoalY = (goalPosition.y.toDouble() - mazeBoundaries.first.y) / mazeHeight
+        val encodedAgentPosition = listOf(normalizedAgentX, normalizedAgentY)
+        val encodedGoalPosition = listOf(normalizedGoalX, normalizedGoalY)
+        
         val sensorData = sensorInputGenerator.generateSensorData()
 
-        return encodedPosition + listOf(encodedRewardSide) + sensorData
+        return encodedAgentPosition + encodedGoalPosition + sensorData
     }
 
     fun decodeAction(output: List<Double>): Action {

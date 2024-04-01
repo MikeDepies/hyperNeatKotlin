@@ -52,7 +52,7 @@ fun main() {
     }
     val crossMutation = RandomCrossover(random)
     val geneticOperators = createDefaultGeneticOperators(
-
+        crossMutation,
         listOf(ActivationFunction.SIGMOID),
         random,
         nodeInnovationTracker,
@@ -109,7 +109,7 @@ fun main() {
         }
     }
 }
-fun tmazePopulationGenerator(weightRange: ClosedRange<Double>, random: Random,
+private fun tmazePopulationGenerator(weightRange: ClosedRange<Double>, random: Random,
 nodeInnovationTracker: InnovationTracker,
 connectionInnovationTracker: InnovationTracker,): InitialPopulationGenerator {
     return SimpleInitialPopulationGenerator(

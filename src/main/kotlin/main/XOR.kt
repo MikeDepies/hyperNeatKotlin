@@ -49,7 +49,7 @@ fun main() {
     val crossMutation = BiasedCrossover(random)
     val geneticOperators =
         createDefaultGeneticOperators(
-
+            crossMutation,
             listOf(ActivationFunction.SIGMOID),
             random,
             nodeInnovationTracker,

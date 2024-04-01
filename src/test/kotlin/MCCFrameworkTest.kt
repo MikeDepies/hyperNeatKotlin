@@ -5,8 +5,8 @@ import io.kotest.matchers.shouldBe
 class MCCFrameworkTest : BehaviorSpec({
     given("an MCCFramework with initialized agent and environment populations") {
         // Instantiate BatchQueuePopulation for both agents and environments
-        val agentQueuePopulation = BatchQueuePopulation<Agent>(100, 10)
-        val environmentQueuePopulation = BatchQueuePopulation<Environment>(100, 10)
+        val agentQueuePopulation = BatchQueuePopulation<Agent<Any, Any>>(100, 10)
+        val environmentQueuePopulation = BatchQueuePopulation<Environment<Any, Any>>(100, 10)
 
         // Initialize the MCCFramework with the instantiated populations
         val mccFramework = MCCFramework(agentQueuePopulation, environmentQueuePopulation)
@@ -34,17 +34,21 @@ class MCCFrameworkTest : BehaviorSpec({
         }
     }
 })
-private class BaseAgent(val isMCSatisfied: (Environment) -> Boolean = { true }) : Agent {
-    override fun mutate(): Agent {
+private class BaseAgent(val isMCSatisfied: (Environment<Any, Any>) -> Boolean = { true }) : Agent<Any, Any> {
+    override fun mutate(): Agent<Any, Any> {
         // Implement mutation logic here
         // For simplicity, return a new instance of BaseAgent to represent a mutated agent
         return BaseAgent()
     }
 
-    override fun satisfiesMinimalCriterion(environment: Environment): Boolean {
+    override fun satisfiesMinimalCriterion(environment: Environment<Any, Any>): Boolean {
         // Implement logic to determine if the agent satisfies the minimal criterion for the given environment
         // For simplicity, return true to indicate this base implementation always satisfies the minimal criterion
         return isMCSatisfied(environment)
+    }
+
+    override fun getModel(): Any {
+        TODO("Not yet implemented")
     }
 }
 
@@ -52,9 +56,9 @@ private class BaseAgent(val isMCSatisfied: (Environment) -> Boolean = { true }) 
 private class BaseEnvironment(
     override var resourceUsageLimit: Int = 10,
     override var resourceUsageCount: Int = 0,
-    val isMCSatisfied: (Agent) -> Boolean = { true }
-) : Environment {
-    override fun mutate(): Environment {
+    val isMCSatisfied: (Agent<Any, Any>) -> Boolean = { true }
+) : Environment<Any, Any> {
+    override fun mutate(): Environment<Any, Any> {
         // For simplicity, return a new instance of BaseEnvironment to represent a mutated environment
         return BaseEnvironment(resourceUsageLimit, resourceUsageCount)
     }
@@ -64,9 +68,13 @@ private class BaseEnvironment(
         return resourceUsageCount < resourceUsageLimit
     }
 
-    override fun satisfiesMinimalCriterion(agent: Agent): Boolean {
+    override fun satisfiesMinimalCriterion(agent: Agent<Any, Any>): Boolean {
         // Implement logic to determine if the environment satisfies the minimal criterion for the given agent
         // For simplicity, return true to indicate this base implementation always satisfies the minimal criterion
         return isMCSatisfied(agent)
+    }
+
+    override fun getModel(): Any {
+        TODO("Not yet implemented")
     }
 }
