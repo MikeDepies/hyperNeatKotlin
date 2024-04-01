@@ -91,10 +91,11 @@ fun main() {
     val mazeGenomeMutator = SimpleMazeGenomeMutator(
         mazeNetworkGenomeMutator,
         random,
-        createMutationParametersWithAdjustedRange(.01, .01, .01, 2.5, 2.5)
+        createMutationParametersWithAdjustedRange(.1, .1, .1, .5, .5)
     )
     val agentGenomeMutator = DefaultGenomeMutator(createMutationOperations(agentGeneticOperator), random)
-    val batchSize = 15
+    val batchSize = 20
+    val mazeBatchSize = 5
     val agentQueuePopulation = BatchQueuePopulation<Agent<NetworkGenome, MazeGenome>>(populationSize, batchSize).also {
         val individuals = agentInitialPopulationGenerator.generatePopulation(populationSize).map {
             MazeSolverAgent(it, agentGenomeMutator, networkProcessorFactory)
@@ -103,7 +104,7 @@ fun main() {
     }
 
     val environmentQueuePopulation =
-        BatchQueuePopulation<Environment<MazeGenome, NetworkGenome>>(populationSize, batchSize).also {
+        BatchQueuePopulation<Environment<MazeGenome, NetworkGenome>>(populationSize, mazeBatchSize).also {
             val individuals = mazeInitialPopulationGenerator.generatePopulation(populationSize).map { networkGenome ->
                 MazeEnvironmentAdapter(
                     mazeGenomeMutator = mazeGenomeMutator,
@@ -191,7 +192,7 @@ fun tmazeAgentPopulationGenerator(
         inputNodeCount =
         8, // Adjusted for TMaze input (agent's x position, agent's y position, and
         // reward side)
-        outputNodeCount = 3, // Adjusted for TMaze actions (MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT)
+        outputNodeCount = 4, // Adjusted for TMaze actions (MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT, MOVE_BACKWARD)
         hiddenNodeCount = 0, // No hidden nodes initially
         connectionDensity = 1.0,
         activationFunctions = activationFunctions,

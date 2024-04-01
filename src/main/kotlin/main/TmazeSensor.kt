@@ -149,7 +149,7 @@ private fun tmazePopulationGeneratorSensor2(
             inputNodeCount =
                     7, // Adjusted for TMaze input (agent's x position, agent's y position, and
             // reward side)
-            outputNodeCount = 3, // Adjusted for TMaze actions (MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT)
+            outputNodeCount = 4, // Adjusted for TMaze actions (MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT, MOVE_BACKWARD)
             hiddenNodeCount = 0, // No hidden nodes initially
             connectionDensity = 1.0,
             activationFunctions =

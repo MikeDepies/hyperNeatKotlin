@@ -126,6 +126,7 @@ class EnhancedStateEncoderDecoder(
             0 -> Action.MOVE_FORWARD
             1 -> Action.MOVE_LEFT
             2 -> Action.MOVE_RIGHT
+            3 -> Action.MOVE_BACKWARD
             else -> Action.MOVE_FORWARD // Default action
         }
     }
@@ -160,6 +161,7 @@ class StateEncoderDecoder(val mazeBoundaries: Pair<Position, Position>) {
             0 -> Action.MOVE_FORWARD
             1 -> Action.MOVE_LEFT
             2 -> Action.MOVE_RIGHT
+            3 -> Action.MOVE_BACKWARD
             else -> Action.MOVE_FORWARD // Default action
         }
     }

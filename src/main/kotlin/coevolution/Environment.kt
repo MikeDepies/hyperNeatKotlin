@@ -36,7 +36,7 @@ fun createMutationParametersWithAdjustedRange(
     widthRange: Double,
     heightRange: Double
 ): MutationParameters {
-    val calculateAdjustedRange = { range: Double -> Pair(1.0 - (range * 0.5), range) }
+    val calculateAdjustedRange = { range: Double -> Pair(1.0 - (range * 0.5), 1.0 + (range * 0.5)) }
 
     return MutationParameters(
         wallThresholdRange = calculateAdjustedRange(wallThresholdRange),
@@ -84,7 +84,7 @@ class SimpleMazeGenomeMutator(
         val mutatedHeight = (mazeGenome.height * randomPerturbation(
             mutationParameters.heightRange.first, mutationParameters.heightRange.second
         ) + .5).toInt()
-
+        // println("Mutated width: $mutatedWidth, Mutated height: $mutatedHeight")
         return mazeGenome.copy(
             networkGenome = mutatedNetworkGenome,
             mazeThresholds = mutatedMazeThresholds,
@@ -109,7 +109,7 @@ class MazeEnvironmentAdapter(
         return MazeEnvironmentAdapter(
             mazeGenomeMutator,
             networkProcessorFactory,
-            MazeGenome(mutatedGenome.networkGenome, mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height),
+            MazeGenome(mutatedGenome.networkGenome, mutatedGenome.mazeThresholds, mutatedGenome.width, mutatedGenome.height),
             resourceUsageLimit
         )
     }
@@ -141,12 +141,12 @@ class MazeEnvironmentAdapter(
         if (shortestPathToGoal(tmazeEnvironment) < 5) {
             return false
         }
-        val mazeSolverTester = MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment)
+        val mazeSolverTester = MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment, 20)
         
         val solvedAgents = agents.count { agent -> mazeSolverTester.canSolveMaze(agent.getModel()) }
         val unsolvedAgents = agents.size - solvedAgents
         
-        return unsolvedAgents > 10 && solvedAgents > 1
+        return unsolvedAgents > 1 //&& solvedAgents > 1
     }
 }
 

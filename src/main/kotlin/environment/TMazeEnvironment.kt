@@ -7,7 +7,7 @@ enum class RewardSide {
 }
 
 enum class Action {
-    MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT
+    MOVE_FORWARD, MOVE_LEFT, MOVE_RIGHT, MOVE_BACKWARD
 }
 
 data class Position(val x: Int, val y: Int)
@@ -99,6 +99,7 @@ class TmazeEnvironment(val environment: MazeEnvironment) {
             Action.MOVE_FORWARD -> agentPosition.copy(y = agentPosition.y + 1)
             Action.MOVE_LEFT -> agentPosition.copy(x = agentPosition.x - 1)
             Action.MOVE_RIGHT -> agentPosition.copy(x = agentPosition.x + 1)
+            Action.MOVE_BACKWARD -> agentPosition.copy(y = agentPosition.y - 1)
         }
 
         // Check if the new position is within the maze structure
