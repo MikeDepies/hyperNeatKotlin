@@ -168,3 +168,4 @@ class StateEncoderDecoder(val mazeBoundaries: Pair<Position, Position>) {
         }
     }
 }
+

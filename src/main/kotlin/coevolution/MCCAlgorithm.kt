@@ -1,8 +1,8 @@
 package coevolution
 
-class MCCFramework(
-    private val agentQueuePopulation: QueuePopulation<Agent>,
-    private val environmentQueuePopulation: QueuePopulation<Environment>
+class MCCFramework<A, E>(
+    private val agentQueuePopulation: QueuePopulation<Agent<A, E>>,
+    private val environmentQueuePopulation: QueuePopulation<Environment<E, A>>
 ) {
     fun iterate() {
         // Generate a new batch of mutated agents and environments

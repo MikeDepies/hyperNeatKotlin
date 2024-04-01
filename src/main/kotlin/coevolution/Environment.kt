@@ -5,15 +5,16 @@ import environment.*
 import algorithm.network.NetworkProcessorFactory
 import genome.NetworkGenome
 import algorithm.GenomeMutator
-interface Environment {
-    fun mutate(): Environment
+import kotlin.random.Random
+
+interface Environment<E, A> {
+    fun mutate(): Environment<E, A>
     val resourceUsageLimit: Int
     var resourceUsageCount: Int
     fun isResourceAvailable(): Boolean
-    fun satisfiesMinimalCriterion(agent: Agent): Boolean
+    fun satisfiesMinimalCriterion(agent: Agent<A, E>): Boolean
+    fun getModel(): E
 }
-
-
 
 
 data class MazeGenome(
@@ -26,21 +27,62 @@ data class MazeGenome(
 interface MazeGenomeMutator {
     fun mutate(mazeGenome: MazeGenome): MazeGenome
 }
-class SimpleMazeGenomeMutator(private val genomeMutator: GenomeMutator) : MazeGenomeMutator {
+fun createMutationParametersWithAdjustedRange(
+    wallThresholdRange: Double,
+    goalPositionThresholdRange: Double,
+    agentStartThresholdRange: Double,
+    widthRange: Double,
+    heightRange: Double
+): MutationParameters {
+    val calculateAdjustedRange = { range: Double -> Pair(1.0 - (range * 0.5), range) }
+
+    return MutationParameters(
+        wallThresholdRange = calculateAdjustedRange(wallThresholdRange),
+        goalPositionThresholdRange = calculateAdjustedRange(goalPositionThresholdRange),
+        agentStartThresholdRange = calculateAdjustedRange(agentStartThresholdRange),
+        widthRange = calculateAdjustedRange(widthRange),
+        heightRange = calculateAdjustedRange(heightRange)
+    )
+}
+
+
+
+data class MutationParameters(
+    val wallThresholdRange: Pair<Double, Double>,
+    val goalPositionThresholdRange: Pair<Double, Double>,
+    val agentStartThresholdRange: Pair<Double, Double>,
+    val widthRange: Pair<Double, Double>,
+    val heightRange: Pair<Double, Double>
+)
+
+class SimpleMazeGenomeMutator(
+    private val genomeMutator: GenomeMutator,
+    private val random: Random,
+    private val mutationParameters: MutationParameters
+) : MazeGenomeMutator {
+    private fun randomPerturbation(min: Double, max: Double): Double = min + (random.nextDouble() * (max - min))
+
     override fun mutate(mazeGenome: MazeGenome): MazeGenome {
-        // Mutate the networkGenome using the provided genomeMutator
         val mutatedNetworkGenome = genomeMutator.mutateGenome(mazeGenome.networkGenome)
 
-        // Assuming mutation involves slight adjustments to the maze thresholds, width, and height
         val mutatedMazeThresholds = mazeGenome.mazeThresholds.copy(
-            wallThreshold = mazeGenome.mazeThresholds.wallThreshold * (0.9 + (Math.random() * 0.2)), // Randomly adjust by -10% to +10%
-            goalPositionThreshold = mazeGenome.mazeThresholds.goalPositionThreshold * (0.9 + (Math.random() * 0.2)),
-            agentStartThreshold = mazeGenome.mazeThresholds.agentStartThreshold * (0.9 + (Math.random() * 0.2))
+            wallThreshold = mazeGenome.mazeThresholds.wallThreshold * randomPerturbation(
+                mutationParameters.wallThresholdRange.first, mutationParameters.wallThresholdRange.second
+            ),
+            goalPositionThreshold = mazeGenome.mazeThresholds.goalPositionThreshold * randomPerturbation(
+                mutationParameters.goalPositionThresholdRange.first, mutationParameters.goalPositionThresholdRange.second
+            ),
+            agentStartThreshold = mazeGenome.mazeThresholds.agentStartThreshold * randomPerturbation(
+                mutationParameters.agentStartThresholdRange.first, mutationParameters.agentStartThresholdRange.second
+            )
         )
-        val mutatedWidth = (mazeGenome.width * (0.95 + (Math.random() * 0.1))).toInt() // Randomly adjust width by -5% to +5%
-        val mutatedHeight = (mazeGenome.height * (0.95 + (Math.random() * 0.1))).toInt() // Randomly adjust height by -5% to +5%
+        val mutatedWidth = (mazeGenome.width * randomPerturbation(
+            mutationParameters.widthRange.first, mutationParameters.widthRange.second
+        )).toInt()
+        val mutatedHeight = (mazeGenome.height * randomPerturbation(
+            mutationParameters.heightRange.first, mutationParameters.heightRange.second
+        )).toInt()
 
-        // Return a new MazeGenome instance with the mutated properties, including the mutated networkGenome
         return mazeGenome.copy(
             networkGenome = mutatedNetworkGenome,
             mazeThresholds = mutatedMazeThresholds,
@@ -49,21 +91,25 @@ class SimpleMazeGenomeMutator(private val genomeMutator: GenomeMutator) : MazeGe
         )
     }
 }
-
 class MazeEnvironmentAdapter(
     private val genomeMutator: GenomeMutator,
     private val networkProcessorFactory: NetworkProcessorFactory,
     private val mazeGenome: MazeGenome,
     override val resourceUsageLimit: Int,
     override var resourceUsageCount: Int = 0
-) : Environment {
-
-    override fun mutate(): Environment {
+) : Environment<MazeGenome, NetworkGenome> {
+    override fun getModel(): MazeGenome = mazeGenome
+    override fun mutate(): Environment<MazeGenome, NetworkGenome> {
         // Generate a mutated genome
         val mutatedGenome = genomeMutator.mutateGenome(mazeGenome.networkGenome)
-        
+
         // Return a new instance of MazeEnvironmentAdapter with the mutated genome
-        return MazeEnvironmentAdapter(genomeMutator, networkProcessorFactory, MazeGenome(mutatedGenome, mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height), resourceUsageLimit)
+        return MazeEnvironmentAdapter(
+            genomeMutator,
+            networkProcessorFactory,
+            MazeGenome(mutatedGenome, mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height),
+            resourceUsageLimit
+        )
     }
 
     override fun isResourceAvailable(): Boolean {
@@ -71,17 +117,17 @@ class MazeEnvironmentAdapter(
         return resourceUsageCount < resourceUsageLimit
     }
 
-    override fun satisfiesMinimalCriterion(agent: Agent): Boolean {
+    override fun satisfiesMinimalCriterion(agent: Agent<NetworkGenome, MazeGenome>): Boolean {
         // Create a new NetworkProcessor from the genome
         val networkProcessor = networkProcessorFactory.createProcessor(mazeGenome.networkGenome)
-        
+
         // Use the NetworkProcessor to create a CPPNMazeQuery
         val cppnMazeQuery = CPPNMazeQuery(networkProcessor)
-        
+
         // Generate a new maze environment using the CPPNMazeQuery
         val cppnMazeGenerator = CPPNMazeGenerator(mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height)
         val mazeEnvironment = cppnMazeGenerator.generateMaze(cppnMazeQuery)
-        
+
         // Check if the generated maze environment satisfies the minimal criterion
         // For example, ensuring there's a path from the agent to the goal
         return mazeEnvironment?.let { env ->
