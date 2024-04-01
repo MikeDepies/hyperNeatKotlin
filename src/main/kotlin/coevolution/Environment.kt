@@ -13,7 +13,8 @@ interface Environment<E, A> {
     val resourceUsageLimit: Int
     var resourceUsageCount: Int
     fun isResourceAvailable(): Boolean
-    fun satisfiesMinimalCriterion(agent: Agent<A, E>): Boolean
+    
+    fun testAgents(agents: List<Agent<A, E>>): Boolean
     fun getModel(): E
 }
 
@@ -79,10 +80,10 @@ class SimpleMazeGenomeMutator(
         )
         val mutatedWidth = (mazeGenome.width * randomPerturbation(
             mutationParameters.widthRange.first, mutationParameters.widthRange.second
-        )).toInt()
+        ) + .5).toInt()
         val mutatedHeight = (mazeGenome.height * randomPerturbation(
             mutationParameters.heightRange.first, mutationParameters.heightRange.second
-        )).toInt()
+        ) + .5).toInt()
 
         return mazeGenome.copy(
             networkGenome = mutatedNetworkGenome,
@@ -118,7 +119,12 @@ class MazeEnvironmentAdapter(
         return resourceUsageCount < resourceUsageLimit
     }
 
-    override fun satisfiesMinimalCriterion(agent: Agent<NetworkGenome, MazeGenome>): Boolean {
+    fun canBeSolved(agent: Agent<NetworkGenome, MazeGenome>, mazeSolverTester: MazeSolverTester): Boolean {
+        
+        return mazeSolverTester.canSolveMaze(agent.getModel())
+    }
+
+    override fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): Boolean {
         // Create a new NetworkProcessor from the genome
         val networkProcessor = networkProcessorFactory.createProcessor(mazeGenome.networkGenome)
 
@@ -128,12 +134,19 @@ class MazeEnvironmentAdapter(
         // Generate a new maze environment using the CPPNMazeQuery
         val cppnMazeGenerator = CPPNMazeGenerator(mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height)
         val mazeEnvironment = cppnMazeGenerator.generateMaze(cppnMazeQuery)
-
-        // Check if the generated maze environment satisfies the minimal criterion
-        // For example, ensuring there's a path from the agent to the goal
-        return mazeEnvironment?.let { env ->
-            val tmazeEnvironment = TmazeEnvironment(env)
-            shortestPathToGoal(tmazeEnvironment) > 2 && !MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment).canSolveMaze(agent.getModel())
-        } ?: false
+        if (mazeEnvironment == null) {
+            return false
+        }
+        val tmazeEnvironment = TmazeEnvironment(mazeEnvironment)
+        if (shortestPathToGoal(tmazeEnvironment) < 5) {
+            return false
+        }
+        val mazeSolverTester = MazeSolverTester(networkProcessorFactory, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment)
+        
+        val solvedAgents = agents.count { agent -> mazeSolverTester.canSolveMaze(agent.getModel()) }
+        val unsolvedAgents = agents.size - solvedAgents
+        
+        return unsolvedAgents > 10 && solvedAgents > 1
     }
 }
+

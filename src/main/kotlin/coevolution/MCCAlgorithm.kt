@@ -27,8 +27,7 @@ class MCCFramework<A, E>(
         // Evaluate all agents (including new successful ones) against new environments
         val allAgents = agentQueuePopulation.queue + successfulAgents
         val successfulEnvironments = newEnvironments.filter { environment ->
-            
-            allAgents.any { agent -> environment.satisfiesMinimalCriterion(agent) }
+            environment.testAgents(allAgents)
         }
         
         // Add successful offspring back to their respective queues
