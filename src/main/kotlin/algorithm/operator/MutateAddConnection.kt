@@ -30,9 +30,9 @@ class MutateAddConnectionOperatorImpl(
         val possibleConnections = genome.nodeGenomes.flatMap { inputNode ->
             genome.nodeGenomes.mapNotNull { outputNode ->
                 if ((inputNode != outputNode || (allowSelfConnections && allowCyclicConnections)) && (inputNode.id to outputNode.id) !in existingConnections) {
-                    if ((allowOutputAsSource && inputNode.type == NodeType.OUTPUT) || 
-                        (allowInputAsTarget && outputNode.type == NodeType.INPUT) ||
-                        (allowCyclicConnections && wouldFormCycle(genome, inputNode, outputNode))) null
+                    if ((!allowOutputAsSource && inputNode.type == NodeType.OUTPUT) ||
+                        (!allowInputAsTarget && outputNode.type == NodeType.INPUT) ||
+                        (!allowCyclicConnections && wouldFormCycle(genome, inputNode, outputNode))) null
                     else Pair(inputNode, outputNode)
                 } else null
             }
