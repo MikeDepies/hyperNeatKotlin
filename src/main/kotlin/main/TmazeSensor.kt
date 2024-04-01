@@ -3,6 +3,7 @@ package main
 import algorithm.*
 import algorithm.activation.SingleActivationFunctionSelection
 import algorithm.crossover.BiasedCrossover
+import algorithm.crossover.RandomCrossover
 import algorithm.evolve.*
 import algorithm.fitnessevaluator.MazeFitnessEvaluatorSensor
 import algorithm.fitnessevaluator.SensorInputGenerator
@@ -31,12 +32,12 @@ private fun createMutationOperations(geneticOperators: GeneticOperators): List<M
 
 fun main() {
     val random = Random(1)
-    val compatabilityThreshold = .3
-    val populationSize = 100 // Adjusted for Iris dataset size
-    val crossMutateChance = 0.4
+    val compatabilityThreshold = 2.3
+    val populationSize = 500 // Adjusted for Iris dataset size
+    val crossMutateChance = 0.5
     val weightRange = -3.0..3.0
     val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
-    val weightMutationConfig = WeightMutationConfig(weight, .9, (-.1..0.1))
+    val weightMutationConfig = WeightMutationConfig(weight, .9, (-.01..0.01))
     // Step 3: Initialize components
     val nodeInnovationTracker = InnovationTracker()
     val connectionInnovationTracker = InnovationTracker()
@@ -49,7 +50,7 @@ fun main() {
             )
     val rewardSides = RewardSide.values().takeLast(1)
     val maps =
-            (1..50).map {
+            (1..20).map {
                 val rewardSide = rewardSides.random(random)
                 createTMaze(rewardSide, random)
             }
@@ -78,7 +79,7 @@ fun main() {
                     return totalFitness / numberOfEvaluations
                 }
             }
-    val crossMutation = BiasedCrossover(random)
+    val crossMutation = BiasedCrossover(random, 1.0)
     val geneticOperators =
             createDefaultGeneticOperators(
 
@@ -91,7 +92,7 @@ fun main() {
             )
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)
 
-    val genomeCompatibility = GenomeCompatibilityTraditional(createDefaultCoefficients())
+    val genomeCompatibility = GenomeCompatibilityTraditional(createCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)
     val fitnessSharing = FitnessSharingExponential()
 

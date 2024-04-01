@@ -1,5 +1,7 @@
 package environment
 
+import algorithm.network.NetworkProcessor
+
 data class MazeThresholds(
     val wallThreshold: Double = 0.5,
     val agentStartThreshold: Double = 0.5,
@@ -55,3 +57,9 @@ interface MazeQuery {
 }
 
 
+class CPPNMazeQuery(private val networkProcessor: NetworkProcessor) : MazeQuery {
+    override fun query(x: Double, y: Double): List<Double> {
+        // Use the network processor to query the CPPN with the given x and y coordinates
+        return networkProcessor.feedforward(listOf(x, y))
+    }
+}
