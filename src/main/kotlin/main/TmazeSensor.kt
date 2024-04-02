@@ -20,14 +20,14 @@ import kotlin.random.Random
 
 private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
 
-private fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
-    return listOf(
+private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
+    return fromList(listOf(
              MutationOperation(0.04, geneticOperators.mutateAddConnection),
              MutationOperation(0.01, geneticOperators.mutateAddNode),
              MutationOperation(0.9, geneticOperators.mutateWeights),
             MutationOperation(0.00, geneticOperators.mutateActivationFunction),
             // MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-    )
+    ), CrossOverOperation(geneticOperators.crossMutation), random)
 }
 
 fun main() {
@@ -55,7 +55,7 @@ fun main() {
                 createTMaze(rewardSide, random)
             }
     maps.forEachIndexed { index, maze ->
-        val environment = TmazeEnvironment(maze)
+        val environment = TmazeEnvironment(maze, maze.width, maze.height)
         val hasPathToGoal = hasPathToGoal(environment)
         println("Maze ${index + 1}:\n${renderEnvironmentAsString(environment)}")
         println("Has path to goal: $hasPathToGoal")
@@ -67,7 +67,7 @@ fun main() {
                     var totalFitness = 0.0
                     val numberOfEvaluations = maps.size
                     maps.forEach { task ->
-                        val environment = TmazeEnvironment(task)
+                        val environment = TmazeEnvironment(task, task.width, task.height)
                         val f =
                                 MazeFitnessEvaluatorSensor(
                                         SensorInputGenerator(environment),
@@ -90,7 +90,7 @@ fun main() {
                     SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
                     weightMutationConfig
             )
-    val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators), random)
+    val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators, random))
 
     val genomeCompatibility = GenomeCompatibilityTraditional(createCoefficients())
     val speciation = SpeciationImpl(compatabilityThreshold, genomeCompatibility, random)

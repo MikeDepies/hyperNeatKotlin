@@ -16,7 +16,7 @@ class TmazeFitnessEvaluator(val environment: TmazeEnvironment) : FitnessEvaluato
         var fitness = 1.0
         val stepsAllowed = 100 // Maximum steps allowed to find the reward
         environment.reset()
-        val mazeBoundaries = deriveMazeBoundaries(environment.environment)
+        val mazeBoundaries = Pair(Position(0, 0), Position(environment.width - 1, environment.height - 1))
         val stateEncoderDecoder = StateEncoderDecoder(mazeBoundaries)
         val networkProcessor =
                 NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()))
@@ -49,7 +49,7 @@ class MazeFitnessEvaluatorSensor(
         var fitness = 0.0
         val stepsAllowed = 100 // Maximum steps allowed to find the reward
         environment.reset()
-        val mazeBoundaries = deriveMazeBoundaries(environment.environment)
+        val mazeBoundaries = Pair(Position(0, 0), Position(environment.width - 1, environment.height - 1))
         val enhancedStateEncoderDecoder =
                 EnhancedStateEncoderDecoder(mazeBoundaries, sensorInputGenerator)
         val networkProcessor =

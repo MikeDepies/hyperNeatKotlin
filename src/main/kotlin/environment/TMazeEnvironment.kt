@@ -11,7 +11,7 @@ enum class Action {
 }
 
 data class Position(val x: Int, val y: Int)
-data class MazeEnvironment(val agentPosition: Position, val goalPosition: Position, val mazeStructure: Set<Position>, val rewardSide: RewardSide)
+data class MazeEnvironment(val agentPosition: Position, val goalPosition: Position, val mazeStructure: Set<Position>, val rewardSide: RewardSide, val width: Int, val height: Int)
 fun createMazeEnvironmentFromFormattedString(mazeString: String, rewardSide: RewardSide): MazeEnvironment {
     val rows = mazeString.trim().lines()
     val mazeStructure = mutableSetOf<Position>()
@@ -27,8 +27,9 @@ fun createMazeEnvironmentFromFormattedString(mazeString: String, rewardSide: Rew
             }
         }
     }
-
-    return MazeEnvironment(agentPosition, goalPosition, mazeStructure, rewardSide)
+    val width = rows[0].length
+    val height = rows.size
+    return MazeEnvironment(agentPosition, goalPosition, mazeStructure, rewardSide, width, height)
 }
 fun createTMaze(rewardSide: RewardSide, random: Random): MazeEnvironment {
     val mazeString = when (rewardSide) {
@@ -85,7 +86,7 @@ fun createTMaze(rewardSide: RewardSide, random: Random): MazeEnvironment {
 }
 
 
-class TmazeEnvironment(val environment: MazeEnvironment) {
+class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val height: Int) {
     var agentPosition = environment.agentPosition // Starting position at the base of the T
     val goalPosition = environment.goalPosition
     val mazeStructure = environment.mazeStructure
@@ -102,8 +103,8 @@ class TmazeEnvironment(val environment: MazeEnvironment) {
             Action.MOVE_BACKWARD -> agentPosition.copy(y = agentPosition.y - 1)
         }
 
-        // Check if the new position is within the maze structure
-        if (newPosition !in mazeStructure) {
+        // Check if the new position is within the maze structure and within the boundaries
+        if (newPosition !in mazeStructure && newPosition.x in 0 until width && newPosition.y in 0 until height) {
             agentPosition = newPosition
         }
 
@@ -115,10 +116,22 @@ class TmazeEnvironment(val environment: MazeEnvironment) {
 
     private fun calculateReward(reachedGoal: Boolean): Double = if (reachedGoal) 1.0 else -0.1
 }
-fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment): String {
-    val boundaries = deriveMazeBoundaries(mazeEnvironment.environment)
+fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: Boolean = false): String {
+    val boundaries = Pair(Position(0, 0), Position(mazeEnvironment.width - 1, mazeEnvironment.height - 1))
     val renderedMaze = StringBuilder()
+
+    if (createBorder) {
+        // Add top border
+        renderedMaze.append("*".repeat(boundaries.second.x - boundaries.first.x + 3))
+        renderedMaze.append("\n")
+    }
+
     for (y in boundaries.first.y..boundaries.second.y) {
+        if (createBorder) {
+            // Add left border
+            renderedMaze.append("* ")
+        }
+
         for (x in boundaries.first.x..boundaries.second.x) {
             val currentPosition = Position(x, y)
             when {
@@ -128,32 +141,31 @@ fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment): String {
                 else -> renderedMaze.append(' ')
             }
         }
+
+        if (createBorder) {
+            // Add right border
+            renderedMaze.append(" *")
+        }
+
         renderedMaze.append('\n')
     }
-    return renderedMaze.toString()
-}
-fun deriveMazeBoundaries(mazeEnvironment: MazeEnvironment): Pair<Position, Position> {
-    var minX = Int.MAX_VALUE
-    var minY = Int.MAX_VALUE
-    var maxX = Int.MIN_VALUE
-    var maxY = Int.MIN_VALUE
 
-    val allPositions = mazeEnvironment.mazeStructure + setOf(mazeEnvironment.agentPosition, mazeEnvironment.goalPosition)
-    for (position in allPositions) {
-        if (position.x < minX) minX = position.x
-        if (position.x > maxX) maxX = position.x
-        if (position.y < minY) minY = position.y
-        if (position.y > maxY) maxY = position.y
+    if (createBorder) {
+        // Add bottom border
+        renderedMaze.append("*".repeat(boundaries.second.x - boundaries.first.x + 3))
+        renderedMaze.append("\n")
     }
 
-    val lowerLeftCorner = Position(minX, minY)
-    val upperRightCorner = Position(maxX, maxY)
-
-    return Pair(lowerLeftCorner, upperRightCorner)
+    return renderedMaze.toString()
 }
+// fun deriveMazeBoundaries(mazeEnvironment: MazeEnvironment): Pair<Position, Position> {
+    
+
+//     return Pair(Position(0, 0), Position(mazeEnvironment.width - 1, mazeEnvironment.height - 1))
+// }
 fun main() {
     val mazeStructure = createTMaze(RewardSide.RIGHT, Random.Default)
-    val mazeEnvironment = TmazeEnvironment(mazeStructure)
+    val mazeEnvironment = TmazeEnvironment(mazeStructure, 10, 10)
     val actions = listOf(Action.MOVE_FORWARD, Action.MOVE_LEFT, Action.MOVE_FORWARD, Action.MOVE_RIGHT, Action.MOVE_FORWARD) // Assuming Action is an enum or similar for possible actions
 
     actions.forEach { action ->
@@ -166,11 +178,11 @@ fun hasPathToGoal(environment: TmazeEnvironment): Boolean {
     val queue = ArrayDeque<Position>()
     queue.add(environment.agentPosition)
     
-    val boundaries = deriveMazeBoundaries(environment.environment)
-    val minX = boundaries.first.x
-    val maxX = boundaries.second.x
-    val minY = boundaries.first.y
-    val maxY = boundaries.second.y
+    
+    val minX = 0
+    val maxX = environment.width - 1
+    val minY = 0
+    val maxY = environment.height - 1
 
     while (queue.isNotEmpty()) {
         val current = queue.removeFirst()
@@ -200,11 +212,11 @@ fun shortestPathToGoal(environment: TmazeEnvironment): Int {
     val queue = ArrayDeque<Pair<Position, Int>>()
     queue.add(Pair(environment.agentPosition, 0))
     
-    val boundaries = deriveMazeBoundaries(environment.environment)
-    val minX = boundaries.first.x
-    val maxX = boundaries.second.x
-    val minY = boundaries.first.y
-    val maxY = boundaries.second.y
+    
+    val minX = 0
+    val maxX = environment.width - 1
+    val minY = 0
+    val maxY = environment.height - 1
 
     while (queue.isNotEmpty()) {
         val (current, distance) = queue.removeFirst()

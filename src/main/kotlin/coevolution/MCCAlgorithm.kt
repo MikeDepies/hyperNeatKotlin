@@ -9,8 +9,10 @@ class MCCFramework<A, E>(
     
     fun iterate(): Pair<List<Agent<A, E>>, List<Environment<E, A>>> {
         // Generate a new batch of mutated agents and environments
-        val newAgents = agentQueuePopulation.selectBatchForMutation().map { it.mutate() }
-        val newEnvironments = environmentQueuePopulation.selectBatchForMutation().map { it.mutate() }
+        val agentBatch = agentQueuePopulation.selectBatchForMutation()
+        val newAgents = agentBatch.map { it.mutate(agentBatch) }
+        val environmentBatch = environmentQueuePopulation.selectBatchForMutation()
+        val newEnvironments = environmentBatch.map { it.mutate(environmentBatch) }
 
         // Filter for environments with available resources
         val availableEnvironments = environmentQueuePopulation.queue.filter { it.resourceUsageLimit > it.resourceUsageCount }
@@ -19,7 +21,10 @@ class MCCFramework<A, E>(
             availableEnvironments.any { environment ->
                 // println("Testing environment for agent")
                 agent.satisfiesMinimalCriterion(environment).also { satisfies ->
-                    if (satisfies) environment.resourceUsageCount++
+                    if (satisfies && environment.resourceUsageCount < environment.resourceUsageLimit) {
+                        environment.resourceUsageCount++
+                        // println("Resource usage: ${environment.resourceUsageCount}")
+                    }
                 }
             }
         }

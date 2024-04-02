@@ -59,12 +59,13 @@ interface NetworkProcessor {
 
 class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
     val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
-
+    val inputNodes = network.nodes.filter { it.type == NodeType.INPUT }
+    val sortedNodes = network.nodes.sortedBy { it.type.ordinal }
     override fun feedforward(inputValues: List<Double>): List<Double> {
         network.nodes.forEach { it.inputValue = 0.0 } // Reset node input values
-
+        
         // Efficiently assign input values to input nodes
-        network.nodes.filter { it.type == NodeType.INPUT }.take(inputValues.size).forEachIndexed {
+        inputNodes.take(inputValues.size).forEachIndexed {
                 index,
                 node ->
             node.inputValue = inputValues[index]
@@ -72,11 +73,11 @@ class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
 
         // Preprocess connections to map output node IDs to their input connections
         val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
-
+        val nodeMap = network.nodes.associateBy { it.id }
         // Process nodes in order of their types
-        network.nodes.sortedBy { it.type.ordinal }.forEach { node ->
+        sortedNodes.forEach { node ->
             inputConnectionsByOutputNodeId[node.id]?.forEach { connection ->
-                network.nodes.find { it.id == connection.inputNodeId }?.let { inputNode ->
+                nodeMap[connection.inputNodeId]?.let { inputNode ->
                     node.inputValue += inputNode.outputValue * connection.weight
                 }
             }
@@ -90,6 +91,7 @@ class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
 }
 class NetworkProcessorStateful(private val network: Network, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) : NetworkProcessor {
     private val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
+    private val inputNodes = network.nodes.filter { it.type == NodeType.INPUT }
 
     override fun feedforward(inputValues: List<Double>): List<Double> {
         resetInputValues()
@@ -98,8 +100,11 @@ class NetworkProcessorStateful(private val network: Network, val maxIterations: 
         var previousOutputValues = outputNodes.map(Node::outputValue)
         var iteration = 0
         var converged = false
+        val sortedNodes = network.nodes.sortedBy { it.type.ordinal }
+        val nodeMap = network.nodes.associateBy { it.id }
+        val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
         while (iteration < maxIterations && !converged) {
-            processNodes()
+            processNodes(sortedNodes, nodeMap, inputConnectionsByOutputNodeId)
 
             val currentOutputValues = outputNodes.map(Node::outputValue)
             converged = isConverged(previousOutputValues, currentOutputValues, convergenceThreshold)
@@ -115,16 +120,13 @@ class NetworkProcessorStateful(private val network: Network, val maxIterations: 
     private fun resetInputValues() = network.nodes.forEach { it.inputValue = 0.0 }
 
     private fun assignInputValues(inputValues: List<Double>) {
-        network.nodes.filter { it.type == NodeType.INPUT }
-            .take(inputValues.size)
-            .forEachIndexed { index, node -> node.inputValue = inputValues[index] }
+        inputNodes.take(inputValues.size).forEachIndexed { index, node -> node.inputValue = inputValues[index] }
     }
 
-    private fun processNodes() {
-        val inputConnectionsByOutputNodeId = network.connections.groupBy(Connection::outputNodeId)
-        network.nodes.sortedBy { it.type.ordinal }.forEach { node ->
+    private fun processNodes(sortedNodes: List<Node>, nodeMap: Map<Int, Node>, inputConnectionsByOutputNodeId: Map<Int, List<Connection>>) {
+        sortedNodes.forEach { node ->
             inputConnectionsByOutputNodeId[node.id]?.forEach { connection ->
-                network.nodes.find { it.id == connection.inputNodeId }?.apply {
+                nodeMap[connection.inputNodeId]?.apply {
                     node.inputValue += this.outputValue * connection.weight
                 }
             }
@@ -132,17 +134,14 @@ class NetworkProcessorStateful(private val network: Network, val maxIterations: 
         }
     }
     private fun isConverged(previousOutputValues: List<Double>, currentOutputValues: List<Double>, threshold: Double): Boolean {
-        for (i in previousOutputValues.indices) {
-            if (kotlin.math.abs(previousOutputValues[i] - currentOutputValues[i]) >= threshold) return false
-        }
-        return true
+        return previousOutputValues.zip(currentOutputValues).all { kotlin.math.abs(it.first - it.second) < threshold }
     }
 }
 
-class NetworkProcessorFactory(val networkBuilder: NetworkBuilder) {
+class NetworkProcessorFactory(val networkBuilder: NetworkBuilder, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) {
     fun createProcessor(genome: NetworkGenome): NetworkProcessor {
         return if (NetworkCycleTester(networkBuilder.buildNetworkFromGenome(genome)).hasCyclicConnections()) {
-            NetworkProcessorStateful(networkBuilder.buildNetworkFromGenome(genome), maxIterations = 10, convergenceThreshold = 0.01)
+            NetworkProcessorStateful(networkBuilder.buildNetworkFromGenome(genome), maxIterations, convergenceThreshold)
         } else {
             NetworkProcessorSimple(networkBuilder.buildNetworkFromGenome(genome))
         }

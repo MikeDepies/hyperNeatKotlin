@@ -18,14 +18,14 @@ import kotlin.random.Random
 
 private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
 
-private fun createMutationOperations(geneticOperators: GeneticOperators): List<MutationOperation> {
-    return listOf(
-            MutationOperation(0.04, geneticOperators.mutateAddConnection),
-            MutationOperation(0.01, geneticOperators.mutateAddNode),
-            MutationOperation(0.9, geneticOperators.mutateWeights),
-            MutationOperation(0.04, geneticOperators.mutateActivationFunction),
-            MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-    )
+private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
+    return fromList(listOf(
+        MutationOperation(0.04, geneticOperators.mutateAddConnection),
+        MutationOperation(0.01, geneticOperators.mutateAddNode),
+        MutationOperation(0.9, geneticOperators.mutateWeights),
+        MutationOperation(0.04, geneticOperators.mutateActivationFunction),
+        MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
+    ), CrossOverOperation(geneticOperators.crossMutation), random)
 }
 fun main() {
     val random = Random(0)
@@ -38,7 +38,7 @@ fun main() {
     val initialPopulationGenerator = tmazePopulationGenerator(weightRange, random, nodeInnovationTracker, connectionInnovationTracker)
     val rewardSide = RewardSide.values().random(random)
     val task = createTMaze(rewardSide, random)
-    val environment = TmazeEnvironment(task)
+    val environment = TmazeEnvironment(task, 9, 6)
 
     val fitnessEvaluator = object : FitnessEvaluator {
         val f = TmazeFitnessEvaluator(environment)
@@ -61,8 +61,7 @@ fun main() {
         weightMutationConfig
     )
     val genomeMutator = DefaultGenomeMutator(
-        createMutationOperations(geneticOperators),
-        random
+        createMutationOperations(geneticOperators, random)
     )
     val compatabilityThreshold = 3.0
     val genomeCompatibility = GenomeCompatibilityTraditional(createDefaultCoefficients())

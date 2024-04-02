@@ -42,7 +42,7 @@ class CPPNMazeGenerator(val mazeThresholds: MazeThresholds, private val width: I
         mazeStructure.remove(agentPosition)
         mazeStructure.remove(goalPosition)
 
-        return MazeEnvironment(agentPosition, goalPosition, mazeStructure, RewardSide.RANDOM)
+        return MazeEnvironment(agentPosition, goalPosition, mazeStructure, RewardSide.RANDOM, width, height)
     }
 
     private fun findFallbackPosition(mazeStructure: Set<Position>, defaultPosition: Position): Position {
