@@ -103,7 +103,7 @@ fun main() {
     val mazeAgentCache = MazeAgentCache(networkProcessorFactory)
     val agentGenomeMutator = DefaultGenomeMutator(createMutationOperations(agentGeneticOperator, random))
     val batchSize = 25
-    val mazeBatchSize = 25
+    val mazeBatchSize = 8
     val agentQueuePopulation = BatchQueuePopulation<Agent<NetworkGenome, MazeGenome>>(populationSize, batchSize).also {
         val individuals = agentInitialPopulationGenerator.generatePopulation(populationSize).map { networkGenome ->     
             MazeSolverAgent(mazeAgentCache, mazeEnvironmentCache, networkGenome, agentGenomeMutator, stepsAllowed)
