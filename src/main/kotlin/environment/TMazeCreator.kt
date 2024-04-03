@@ -1,6 +1,7 @@
 package environment
 
 import algorithm.network.NetworkProcessor
+import kotlin.math.sqrt
 
 data class MazeThresholds(
     val wallThreshold: Double = 0.5,
@@ -62,6 +63,7 @@ interface MazeQuery {
 class CPPNMazeQuery(private val networkProcessor: NetworkProcessor) : MazeQuery {
     override fun query(x: Double, y: Double): List<Double> {
         // Use the network processor to query the CPPN with the given x and y coordinates
-        return networkProcessor.feedforward(listOf(x, y))
+        val distanceToCenter = sqrt(x * x + y * y)
+        return networkProcessor.feedforward(listOf(x, y, distanceToCenter))
     }
 }
