@@ -4,6 +4,7 @@ import environment.renderEnvironmentAsString
 import kotlinx.coroutines.*
 import java.util.concurrent.Executors
 import java.util.stream.Collectors
+import kotlin.math.max
 
 data class SolvedEnvironment<E, A>(
     val environment: Environment<E, A>,
@@ -20,6 +21,8 @@ class MCCFramework<A, E>(
     private val environmentQueuePopulation: QueuePopulation<Environment<E, A>>,
     private val dispatcher: CoroutineDispatcher
 ) {
+    var maxAgents = 5.0
+    var minAgents = 1.0
 
     suspend fun iterate(): Pair<List<Agent<A, E>>, List<SolvedEnvironment<E, A>>> = coroutineScope {
         // Generate a new batch of mutated agents and environments
@@ -55,8 +58,20 @@ class MCCFramework<A, E>(
             async(dispatcher) {
                 SolvedEnvironment(environment, environment.testAgents(allAgents))
             }
-        }.awaitAll().filter { it.agents.size in (1..1) }
-
+        }.awaitAll().filter { it.agents.size in (minAgents.toInt()..maxAgents.toInt()) }
+        if (successfulEnvironments.size == 0) {
+            maxAgents += .1
+        } else {
+            maxAgents -= .1
+            maxAgents = maxAgents.coerceAtLeast(max(minAgents, 1.0))
+        }
+        if (successfulAgents.size == 0) {
+            minAgents -= 1.0
+            minAgents = minAgents.coerceAtLeast(1.0)
+        } else {
+            minAgents += .1
+            minAgents = minAgents.coerceIn(1.0, maxAgents)
+        }
         // Add successful offspring back to their respective queues
 
         agentQueuePopulation.addToQueue(successfulAgents)

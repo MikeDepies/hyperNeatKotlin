@@ -117,12 +117,35 @@ class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val hei
     private fun calculateReward(reachedGoal: Boolean): Double = if (reachedGoal) 1.0 else -0.1
 }
 
+fun getAnsiColorCodes(): List<String> {
+    return listOf(
+        "\u001B[35m",  // Purple
+        "\u001B[36m",  // Cyan
+        "\u001B[34m",  // Blue
+        "\u001B[33m",  // Yellow
+        
+        "\u001B[31m",   // Red
+        
+        "\u001B[37m",  // White
+        "\u001B[30m",  // Black
+        "\u001B[96m",  // Bright Cyan
+        // "\u001B[95m",  // Bright Purple
+        "\u001B[94m",  // Bright Blue
+        "\u001B[93m",  // Bright Yellow
+        "\u001B[92m",  // Bright Green
+        "\u001B[91m",  // Bright Red
+        "\u001B[97m",  // Bright White
+        "\u001B[90m",  // Bright Black
+        // "\u001B[35m",  // Purple
+        // "\u001B[32m",  // Green
+        
+    )
+}
 
-
-fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: Boolean = false, walkedPath: List<Position> = emptyList()): String {
+fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: Boolean = false, walkedPaths: List<List<Position>> = emptyList()): String {
     val boundaries = Pair(Position(0, 0), Position(mazeEnvironment.width - 1, mazeEnvironment.height - 1))
     val renderedMaze = StringBuilder()
-
+    val colors = getAnsiColorCodes()
     if (createBorder) {
         // Add top border
         renderedMaze.append("*".repeat(boundaries.second.x - boundaries.first.x + 3))
@@ -137,20 +160,25 @@ fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: B
 
         for (x in boundaries.first.x..boundaries.second.x) {
             val currentPosition = Position(x, y)
+            var pathIndex = -1
             when {
-                currentPosition == mazeEnvironment.agentPosition -> renderedMaze.append("\u001B[35mA\u001B[0m") // Make the A purple
-                currentPosition == mazeEnvironment.goalPosition -> renderedMaze.append("\u001B[32mG\u001B[0m") // Make the G green
+                currentPosition == mazeEnvironment.agentPosition -> renderedMaze.append("\u001B[35m☻\u001B[0m") // Make the A purple
+                currentPosition == mazeEnvironment.goalPosition -> renderedMaze.append("\u001B[32m☼\u001B[0m") // Make the G green
                 currentPosition in mazeEnvironment.mazeStructure -> renderedMaze.append('█')
-                currentPosition in walkedPath -> {
-                    val index = walkedPath.lastIndexOf(currentPosition)
-                    val nextPosition = if (index < walkedPath.size - 1) walkedPath[index + 1] else mazeEnvironment.goalPosition
+                walkedPaths.any { 
+                    pathIndex++
+                    it.contains(currentPosition) 
+                } -> {
+                    val path = walkedPaths[pathIndex]
+                    val index = path.lastIndexOf(currentPosition)
+                    val nextPosition = if (index < path.size - 1) path[index + 1] else mazeEnvironment.goalPosition
                     val direction = when {
                         nextPosition.x < currentPosition.x -> '←'
                         nextPosition.x > currentPosition.x -> '→'
                         nextPosition.y < currentPosition.y -> '↑'
                         else -> '↓'
                     }
-                    renderedMaze.append("\u001B[33m$direction\u001B[0m") // Make the direction yellow
+                    renderedMaze.append("${colors[pathIndex.coerceAtMost(colors.size - 1)]}$direction\u001B[0m") // Make the direction yellow
                 }
                 else -> renderedMaze.append(' ')
             }
@@ -177,16 +205,16 @@ fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: B
 
 //     return Pair(Position(0, 0), Position(mazeEnvironment.width - 1, mazeEnvironment.height - 1))
 // }
-fun main() {
-    val mazeStructure = createTMaze(RewardSide.RIGHT, Random.Default)
-    val mazeEnvironment = TmazeEnvironment(mazeStructure, 10, 10)
-    val actions = listOf(Action.MOVE_FORWARD, Action.MOVE_LEFT, Action.MOVE_FORWARD, Action.MOVE_RIGHT, Action.MOVE_FORWARD) // Assuming Action is an enum or similar for possible actions
+// fun main() {
+//     val mazeStructure = createTMaze(RewardSide.RIGHT, Random.Default)
+//     val mazeEnvironment = TmazeEnvironment(mazeStructure, 10, 10)
+//     val actions = listOf(Action.MOVE_FORWARD, Action.MOVE_LEFT, Action.MOVE_FORWARD, Action.MOVE_RIGHT, Action.MOVE_FORWARD) // Assuming Action is an enum or similar for possible actions
 
-    actions.forEach { action ->
-        mazeEnvironment.step(action)
-        println(renderEnvironmentAsString(mazeEnvironment))
-    }
-}
+//     actions.forEach { action ->
+//         mazeEnvironment.step(action)
+//         println(renderEnvironmentAsString(mazeEnvironment))
+//     }
+// }
 fun hasPathToGoal(environment: TmazeEnvironment): Boolean {
     val visited = mutableSetOf<Position>()
     val queue = ArrayDeque<Position>()
