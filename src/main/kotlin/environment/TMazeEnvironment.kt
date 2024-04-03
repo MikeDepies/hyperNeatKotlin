@@ -138,8 +138,8 @@ fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: B
         for (x in boundaries.first.x..boundaries.second.x) {
             val currentPosition = Position(x, y)
             when {
-                currentPosition == mazeEnvironment.agentPosition -> renderedMaze.append('A')
-                currentPosition == mazeEnvironment.goalPosition -> renderedMaze.append('G')
+                currentPosition == mazeEnvironment.agentPosition -> renderedMaze.append("\u001B[35mA\u001B[0m") // Make the A purple
+                currentPosition == mazeEnvironment.goalPosition -> renderedMaze.append("\u001B[32mG\u001B[0m") // Make the G green
                 currentPosition in mazeEnvironment.mazeStructure -> renderedMaze.append('█')
                 currentPosition in walkedPath -> {
                     val index = walkedPath.lastIndexOf(currentPosition)
@@ -150,7 +150,7 @@ fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: B
                         nextPosition.y < currentPosition.y -> '↑'
                         else -> '↓'
                     }
-                    renderedMaze.append(direction)
+                    renderedMaze.append("\u001B[33m$direction\u001B[0m") // Make the direction yellow
                 }
                 else -> renderedMaze.append(' ')
             }

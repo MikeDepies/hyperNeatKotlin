@@ -1,34 +1,32 @@
 package coevolution
 
 import environment.Position
+import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+
+
+import java.util.concurrent.CompletableFuture
 
 data class AgentSolution<A, E>(val agent: Agent<A, E>, val solution: List<Position>)
 interface SolutionMap<A, E> {
     fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>)
-    fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>?
+    suspend fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>?
     fun clearSolutions()
 }
 
 sealed class SolutionMapCommand<A, E>
 data class AddSolutionCommand<A, E>(val agent: AgentEnvironmentPair<A, E>, val solution: List<Position>) :
     SolutionMapCommand<A, E>()
-
-// data class GetSolutionCommand<A, E>(val environment: Environment<E, A>) : SolutionMapCommand<A, E>()
+    data class GetSolutionCommand<A, E>(val environment: Environment<E, A>,val deferred: CompletableDeferred<List<AgentSolution<A, E>>?>) : SolutionMapCommand<A, E>()
 object ClearSolutionsCommand : SolutionMapCommand<Nothing, Nothing>()
 class SolutionMapCommandSender<A, E>(private val solutionChannel: Channel<SolutionMapCommand<A, E>>) {
     fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
         solutionChannel.trySend(AddSolutionCommand(agent, solution))
     }
 
-    // fun getSolution(environment: Environment<E, A>) {
-    //     solutionChannel.trySend(GetSolutionCommand(environment))
-    // }
+    fun getSolution(environment: Environment<E, A>, promise: CompletableDeferred<List<AgentSolution<A, E>>?>) {
+        solutionChannel.trySend(GetSolutionCommand(environment, promise))
+    }
 
     fun clearSolutions() {
         solutionChannel.trySend(ClearSolutionsCommand as SolutionMapCommand<A, E>)
@@ -43,7 +41,7 @@ class SolutionMapSimple<A, E> : SolutionMap<A, E> {
         currentSolutions += AgentSolution(agent.agent, solution)
     }
 
-    override fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>? {
+    override suspend fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>? {
         return map[environment]
     }
 
@@ -61,8 +59,11 @@ class DelegatedSolutionMap<A, E>(
         solutionMapCommandSender.addSolution(agent, solution)
     }
 
-    override fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>? {
-        return solutionMapUpdater.map[environment]
+    override suspend fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>? {
+        val deferred = CompletableDeferred<List<AgentSolution<A, E>>?>()
+        val command = GetSolutionCommand(environment, deferred)
+        solutionMapCommandSender.getSolution(environment, deferred)
+        return deferred.await()
     }
 
     override fun clearSolutions() {
@@ -81,9 +82,11 @@ class SolutionMapUpdater<A, E>(
                     val currentSolutions = map.getOrPut(command.agent.environment) { mutableListOf() }
                     currentSolutions += AgentSolution(command.agent.agent, command.solution)
                 }
-                // is GetSolutionCommand -> {
-                //     // Implement get solution logic
-                // }
+                is GetSolutionCommand -> {
+                    val solution = map[command.environment]
+                    // Fulfill the promise with the solution
+                    command.deferred.complete(solution)
+                }
                 is ClearSolutionsCommand -> {
                     map.clear()
                 }

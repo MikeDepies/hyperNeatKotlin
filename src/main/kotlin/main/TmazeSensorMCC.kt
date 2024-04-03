@@ -43,25 +43,25 @@ private fun createMutationOperations(geneticOperators: GeneticOperators, random:
 private fun createMutationOperationsMaze(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
     return fromList(
         listOf(
-            MutationOperation(0.02, geneticOperators.mutateAddConnection),
-            MutationOperation(0.01, geneticOperators.mutateAddNode),
+            MutationOperation(0.2, geneticOperators.mutateAddConnection),
+            MutationOperation(0.08, geneticOperators.mutateAddNode),
             MutationOperation(0.9, geneticOperators.mutateWeights),
-            MutationOperation(0.01, geneticOperators.mutateActivationFunction),
-            MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-        ), CrossOverOperation(geneticOperators.crossMutation, .5), random
+            MutationOperation(0.1, geneticOperators.mutateActivationFunction),
+            MutationOperation(0.15, geneticOperators.mutateConnectionEnabled)
+        ), CrossOverOperation(geneticOperators.crossMutation, .8), random
     )
 }
 
 fun main() {
     val random = Random(1)
     val stepsAllowed = 100
-    val populationSize = 100 // Adjusted for Iris dataset size
+    val populationSize = 50 // Adjusted for Iris dataset size
     val weightRange = -3.0..3.0
     val dispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher()
     val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
     val weightMutationConfig = WeightMutationConfig(weight, .9, (-.01..0.01))
     val weightMaze = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
-    val weightMazeMutationConfig = WeightMutationConfig(weightMaze, .9, (-.3..0.3))
+    val weightMazeMutationConfig = WeightMutationConfig(weightMaze, .9, (-.03..0.03))
     // Step 3: Initialize components
     val nodeInnovationTracker = InnovationTracker()
     val connectionInnovationTracker = InnovationTracker()
@@ -94,7 +94,7 @@ fun main() {
             nodeInnovationTracker,
             connectionInnovationTracker,
             RandomActivationFunctionSelection(random, ActivationFunction.cppn),
-            weightMazeMutationConfig, true, true, true, true
+            weightMazeMutationConfig, //true, true, true, true
         )
 
     val agentGeneticOperator = createDefaultGeneticOperators(
@@ -104,7 +104,7 @@ fun main() {
         nodeInnovationTracker,
         connectionInnovationTracker,
         SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
-        weightMutationConfig
+        weightMutationConfig, true, true, true, true
     )
     val mazeNetworkGenomeMutator = DefaultGenomeMutator(createMutationOperationsMaze(mazeGeneticOperators, random))
     val mazeGenomeMutator = SimpleMazeGenomeMutator(
@@ -115,8 +115,8 @@ fun main() {
     val mazeEnvironmentCache = MazeEnvironmentCache(networkProcessorFactory, mazeGenomeMutator)
     val mazeAgentCache = MazeAgentCache(networkProcessorFactory)
     val agentGenomeMutator = DefaultGenomeMutator(createMutationOperations(agentGeneticOperator, random))
-    val batchSize = 50
-    val mazeBatchSize = 8
+    val batchSize = 25
+    val mazeBatchSize = 5
     val solutionChannel = Channel<SolutionMapCommand<NetworkGenome, MazeGenome>>()
     val solutionMapUpdater = SolutionMapUpdater(solutionChannel, mutableMapOf())
     val solutionMapCommandSender = SolutionMapCommandSender(solutionChannel)
@@ -147,9 +147,9 @@ fun main() {
                     solutionMap = solutionMap,
                     mazeGenome = MazeGenome(
                         networkGenome = networkGenome,
-                        mazeThresholds = MazeThresholds(.2, .5, .5),
-                        width = 8,
-                        height = 8
+                        mazeThresholds = MazeThresholds(.6, .5, .5),
+                        width = 64,
+                        height = 24
                     ),
                     resourceUsageLimit = 5,
                     stepsAllowed = stepsAllowed,
