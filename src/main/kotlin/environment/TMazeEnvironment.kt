@@ -85,7 +85,7 @@ fun createTMaze(rewardSide: RewardSide, random: Random): MazeEnvironment {
     return createMazeEnvironmentFromFormattedString(mazeString, rewardSide)
 }
 
-
+data class MazeSolution(val reachedGoal: Boolean, val reward: Double, val agentPosition: Position)
 class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val height: Int) {
     var agentPosition = environment.agentPosition // Starting position at the base of the T
     val goalPosition = environment.goalPosition
@@ -95,7 +95,7 @@ class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val hei
         agentPosition = environment.agentPosition
     }
 
-    fun step(action: Action): Pair<Boolean, Double> {
+    fun step(action: Action): MazeSolution {
         val newPosition = when (action) {
             Action.MOVE_FORWARD -> agentPosition.copy(y = agentPosition.y + 1)
             Action.MOVE_LEFT -> agentPosition.copy(x = agentPosition.x - 1)
@@ -111,12 +111,15 @@ class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val hei
         val reachedGoal = agentPosition == goalPosition
         val reward = calculateReward(reachedGoal)
 
-        return Pair(reachedGoal, reward)
+        return MazeSolution(reachedGoal, reward, agentPosition)
     }
 
     private fun calculateReward(reachedGoal: Boolean): Double = if (reachedGoal) 1.0 else -0.1
 }
-fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: Boolean = false): String {
+
+
+
+fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: Boolean = false, walkedPath: List<Position> = emptyList()): String {
     val boundaries = Pair(Position(0, 0), Position(mazeEnvironment.width - 1, mazeEnvironment.height - 1))
     val renderedMaze = StringBuilder()
 
@@ -137,11 +140,22 @@ fun renderEnvironmentAsString(mazeEnvironment: TmazeEnvironment, createBorder: B
             when {
                 currentPosition == mazeEnvironment.agentPosition -> renderedMaze.append('A')
                 currentPosition == mazeEnvironment.goalPosition -> renderedMaze.append('G')
-                currentPosition in mazeEnvironment.mazeStructure -> renderedMaze.append('#')
+                currentPosition in mazeEnvironment.mazeStructure -> renderedMaze.append('█')
+                currentPosition in walkedPath -> {
+                    val index = walkedPath.lastIndexOf(currentPosition)
+                    val nextPosition = if (index < walkedPath.size - 1) walkedPath[index + 1] else mazeEnvironment.goalPosition
+                    val direction = when {
+                        nextPosition.x < currentPosition.x -> '←'
+                        nextPosition.x > currentPosition.x -> '→'
+                        nextPosition.y < currentPosition.y -> '↑'
+                        else -> '↓'
+                    }
+                    renderedMaze.append(direction)
+                }
                 else -> renderedMaze.append(' ')
             }
         }
-
+        
         if (createBorder) {
             // Add right border
             renderedMaze.append(" *")

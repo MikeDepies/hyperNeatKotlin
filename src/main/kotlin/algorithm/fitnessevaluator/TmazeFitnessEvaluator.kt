@@ -74,16 +74,18 @@ class MazeFitnessEvaluatorSensor(
     }
 }
 
-
-class SensorInputGenerator(val environment: TmazeEnvironment) {
-
-    private val directions =
-            listOf(
-                    Pair(-1, 0), // Left
-                    Pair(1, 0), // Right
-                    Pair(0, -1), // Up
-                    Pair(0, 1) // Down
-            )
+fun createSensorPositions(sensorRange: Int): List<Pair<Int, Int>> {
+    val directions = mutableListOf<Pair<Int, Int>>()
+    for (i in -sensorRange..sensorRange) {
+        for (j in -sensorRange..sensorRange) {
+            if (i != 0 || j != 0) {
+                directions.add(Pair(i, j))
+            }
+        }
+    }
+    return directions
+}
+class SensorInputGenerator(val environment: TmazeEnvironment, private val directions: List<Pair<Int, Int>>) {
 
     fun generateSensorData(): List<Double> {
         return directions.map { (dx, dy) ->
@@ -92,10 +94,16 @@ class SensorInputGenerator(val environment: TmazeEnvironment) {
                             x = environment.agentPosition.x + dx,
                             y = environment.agentPosition.y + dy
                     )
-            if (checkPosition in environment.mazeStructure) 1.0 else 0.0
+            when {
+                checkPosition in environment.mazeStructure -> 1.0 // Wall
+                checkPosition == environment.goalPosition -> 0.5 // Goal position
+                else -> 0.0 // Empty space
+            }
         }
     }
 }
+
+
 
 class EnhancedStateEncoderDecoder(
         private val mazeBoundaries: Pair<Position, Position>,

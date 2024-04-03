@@ -20,14 +20,16 @@ class MazeSolverAgent(
     private val mazeEnvironmentCache: MazeEnvironmentCache,
     private val genome: NetworkGenome,
     private val genomeMutator: GenomeMutator,
+    private val solutionMap: SolutionMap<NetworkGenome, MazeGenome>,
     // val networkProcessorFactory: NetworkProcessorFactory,
-    val stepsAllowed: Int
+    val stepsAllowed: Int,
+    val sensorPositions : List<Pair<Int,Int>>
 ) : Agent<NetworkGenome, MazeGenome> {
     override fun mutate(potentialMates: List<Agent<NetworkGenome, MazeGenome>>): Agent<NetworkGenome, MazeGenome> {
         
         val mutatedGenome = if (genomeMutator.rollCrossMutation()) genomeMutator.crossMutateGenomes(genome, potentialMates.random().getModel()) else genomeMutator.mutateGenome(genome)
         
-        return MazeSolverAgent(mazeAgentCache,mazeEnvironmentCache, mutatedGenome, genomeMutator,  stepsAllowed)
+        return MazeSolverAgent(mazeAgentCache,mazeEnvironmentCache, mutatedGenome, genomeMutator, solutionMap, stepsAllowed, sensorPositions)
     }
 
     override fun satisfiesMinimalCriterion(environment: Environment<MazeGenome, NetworkGenome>): Boolean {
@@ -38,7 +40,11 @@ class MazeSolverAgent(
         return generatedMaze?.let { maze ->
             val tmazeEnvironment = TmazeEnvironment(maze, maze.width, maze.height)
         
-            MazeSolverTester(mazeAgentCache,  SensorInputGenerator(tmazeEnvironment), tmazeEnvironment, stepsAllowed).canSolveMaze(genome)
+            val result = MazeSolverTester(mazeAgentCache,  SensorInputGenerator(tmazeEnvironment, sensorPositions), tmazeEnvironment, stepsAllowed).canSolveMaze(genome)
+            if (result.mazeFinished)
+                solutionMap.addSolution(AgentEnvironmentPair(this, environment), result.visitedPositions)
+            result.mazeFinished
+
         } ?: false
     }
 
@@ -48,6 +54,11 @@ class MazeSolverAgent(
 }
 
 
+data class MazeSolutionAttempt(
+    val mazeFinished: Boolean,
+    val visitedPositions: List<Position>
+)
+
 class MazeSolverTester(
     private val mazeAgentCache: MazeAgentCache,
     // private val networkProcessorFactory: NetworkProcessorFactory,
@@ -56,12 +67,13 @@ class MazeSolverTester(
     private val stepsAllowed: Int = 100 // Default steps allowed to solve the maze
 ) {
 
-    fun canSolveMaze(genome: NetworkGenome): Boolean {
+    fun canSolveMaze(genome: NetworkGenome): MazeSolutionAttempt {
         environment.reset()
         val mazeBoundaries = Pair(Position(0, 0), Position(environment.width - 1, environment.height - 1))
         val enhancedStateEncoderDecoder =
             EnhancedStateEncoderDecoder(mazeBoundaries, sensorInputGenerator)
         val networkProcessor = mazeAgentCache.getNetworkProcessor(genome)
+        val visitedPositions = mutableListOf<Position>()
         
         for (step in 0 until stepsAllowed) {
             
@@ -72,11 +84,12 @@ class MazeSolverTester(
             val output = networkProcessor.feedforward(inputs)
             val action = enhancedStateEncoderDecoder.decodeAction(output)
 
-            val (reachedGoal, _) = environment.step(action)
-            if (reachedGoal) return true // Successfully solved the maze
+            val (reachedGoal, reward, position) = environment.step(action)
+            if (reachedGoal) return MazeSolutionAttempt(true, visitedPositions) // Successfully solved the maze
+            visitedPositions.add(position)
         }
 
-        return false // Failed to solve the maze within the allotted steps
+        return MazeSolutionAttempt(false, visitedPositions) // Failed to solve the maze within the allotted steps
     }
 }
 

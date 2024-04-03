@@ -14,7 +14,7 @@ interface Environment<E, A> {
     var resourceUsageCount: Int
     fun isResourceAvailable(): Boolean
     
-    fun testAgents(agents: List<Agent<A, E>>): Boolean
+    fun testAgents(agents: List<Agent<A, E>>): List<Agent<A, E>>
     fun getModel(): E
 }
 
@@ -110,8 +110,10 @@ class MazeEnvironmentAdapter(
     private val mazeAgentCache: MazeAgentCache,
     private val mazeEnvironmentCache: MazeEnvironmentCache,
     private val mazeGenomeMutator: MazeGenomeMutator,
+    private val solutionMap: SolutionMap<NetworkGenome, MazeGenome>,
     // private val networkProcessorFactory: NetworkProcessorFactory,
     private val mazeGenome: MazeGenome,
+    val sensorPositions: List<Pair<Int, Int>>,
     override val resourceUsageLimit: Int,
     private val stepsAllowed: Int,
     override var resourceUsageCount: Int = 0,
@@ -130,8 +132,10 @@ class MazeEnvironmentAdapter(
             mazeAgentCache,
             mazeEnvironmentCache,
             mazeGenomeMutator,
+            solutionMap,
             // networkProcessorFactory,
             MazeGenome(mutatedGenome.networkGenome, mutatedGenome.mazeThresholds, mutatedGenome.width, mutatedGenome.height),
+            sensorPositions,
             resourceUsageLimit,
             stepsAllowed
         )
@@ -142,28 +146,31 @@ class MazeEnvironmentAdapter(
         return resourceUsageCount < resourceUsageLimit
     }
 
-    fun canBeSolved(agent: Agent<NetworkGenome, MazeGenome>, mazeSolverTester: MazeSolverTester): Boolean {
+    // fun canBeSolved(agent: Agent<NetworkGenome, MazeGenome>, mazeSolverTester: MazeSolverTester): Boolean {
         
-        return mazeSolverTester.canSolveMaze(agent.getModel())
-    }
+    //     return mazeSolverTester.canSolveMaze(agent.getModel()).mazeFinished
+    // }
 
-    override fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): Boolean {
+    override fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): List<Agent<NetworkGenome, MazeGenome>> {
         val mazeEnvironment = mazeEnvironmentCache.getMazeEnvironment(mazeGenome)
         if (mazeEnvironment == null) {
-            return false
+            return emptyList()
         }
         val tmazeEnvironment = TmazeEnvironment(mazeEnvironment, mazeEnvironment.width, mazeEnvironment.height)
         // if (shortestPathToGoal(tmazeEnvironment) < 1) {
         //     return false
         // }
-        val mazeSolverTester = MazeSolverTester(mazeAgentCache, SensorInputGenerator(tmazeEnvironment), tmazeEnvironment, stepsAllowed)
+        val mazeSolverTester = MazeSolverTester(mazeAgentCache, SensorInputGenerator(tmazeEnvironment, sensorPositions), tmazeEnvironment, stepsAllowed)
         
-        val solvedAgents = agents.count { agent -> 
+        val solvedAgents = agents.filter { agent -> 
             tmazeEnvironment.reset()
-            mazeSolverTester.canSolveMaze(agent.getModel()) }
-        val unsolvedAgents = agents.size - solvedAgents
+            val result = mazeSolverTester.canSolveMaze(agent.getModel())
+            if (result.mazeFinished)
+                solutionMap.addSolution(AgentEnvironmentPair(agent, this), result.visitedPositions)
+            result.mazeFinished
+        }
         
-        return solvedAgents < 2 && solvedAgents > 0
+        return solvedAgents
     }
 }
 

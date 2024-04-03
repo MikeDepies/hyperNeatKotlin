@@ -70,7 +70,7 @@ fun main() {
                         val environment = TmazeEnvironment(task, task.width, task.height)
                         val f =
                                 MazeFitnessEvaluatorSensor(
-                                        SensorInputGenerator(environment),
+                                        SensorInputGenerator(environment, listOf(Pair(-1,0),Pair(1,0),Pair(0,1),Pair(0,-1))),
                                         environment
                                 )
                         totalFitness += f.calculateFitness(genome)
