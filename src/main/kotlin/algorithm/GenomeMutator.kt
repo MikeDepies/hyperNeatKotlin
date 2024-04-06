@@ -14,14 +14,14 @@ interface GenomeMutator {
 
 data class MutationOperation(val probability: Double, val operation: GeneticOperator)
 data class CrossOverOperation(val operation: CrossMutation, val probability: Double = .7)
-data class GenomeMutatorConfig(
+data class GenomeMutatorOperationConfig(
     val mutationOperations: List<MutationOperation>,
     val crossOverOperations: CrossOverOperation,
     val random: Random
 )
 
-fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
-    return GenomeMutatorConfig(
+fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorOperationConfig {
+    return GenomeMutatorOperationConfig(
         listOf(
             MutationOperation(0.04, geneticOperators.mutateAddConnection),
             MutationOperation(0.01, geneticOperators.mutateAddNode),
@@ -32,11 +32,11 @@ fun createMutationOperations(geneticOperators: GeneticOperators, random: Random)
     )
 }
 
-fun fromList(operations: List<MutationOperation>, crossOverOperations: CrossOverOperation, random: Random): GenomeMutatorConfig {
-    return GenomeMutatorConfig(operations, crossOverOperations, random)
+fun fromList(operations: List<MutationOperation>, crossOverOperations: CrossOverOperation, random: Random): GenomeMutatorOperationConfig {
+    return GenomeMutatorOperationConfig(operations, crossOverOperations, random)
 }
 
-class DefaultGenomeMutator(val config: GenomeMutatorConfig) :
+class DefaultGenomeMutator(val config: GenomeMutatorOperationConfig) :
     GenomeMutator {
 
     override fun mutateGenome(genome: NetworkGenome): NetworkGenome {

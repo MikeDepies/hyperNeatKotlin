@@ -25,7 +25,7 @@ data class WeightMutationConfig(
 )
 fun createDefaultGeneticOperators(
     crossMutation: CrossMutation,
-    activationFunctions: List<ActivationFunction>,
+
     random: Random,
     nodeInnovationTracker: InnovationTracker,
     connectionInnovationTracker: InnovationTracker,
@@ -41,7 +41,7 @@ fun createDefaultGeneticOperators(
         MutateAddNodeOperatorImpl(random, nodeInnovationTracker, connectionInnovationTracker, activationSelection, weightMutationConfig.randomWeight),
         MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightMutationConfig.randomWeight, allowOutputAsSource, allowInputAsTarget, allowCyclicConnections, allowSelfConnections, ),
         MutateWeightsOperatorImpl(weightMutationConfig.randomWeight, random, weightMutationConfig.perturbationChance, weightMutationConfig.perturbationAmount),
-        MutateRandomActivationFunction(random, activationFunctions),
+        MutateEveryActivationFunction(random, activationSelection),
         MutateConnectionEnabledOperatorImpl(random)
     )
 }
