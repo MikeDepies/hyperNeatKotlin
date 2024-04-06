@@ -1,5 +1,6 @@
 package algorithm
+import java.util.concurrent.atomic.AtomicInteger
 
-class InnovationTracker(private var currentInnovationNumber : Int = 0) {
-    fun getNextInnovationNumber(): Int = currentInnovationNumber++
+class InnovationTracker(private val currentInnovationNumber : AtomicInteger = AtomicInteger(0)) {
+    fun getNextInnovationNumber(): Int = currentInnovationNumber.getAndIncrement()
 }

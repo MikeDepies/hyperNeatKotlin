@@ -23,19 +23,22 @@ import kotlinx.coroutines.launch
 import kotlin.collections.listOf
 import kotlin.random.Random
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.Dispatchers
+import java.lang.Integer.max
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
 
 private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
     return fromList(
         listOf(
-            MutationOperation(0.04, geneticOperators.mutateAddConnection),
-            MutationOperation(0.02, geneticOperators.mutateAddNode),
+            MutationOperation(0.02, geneticOperators.mutateAddConnection),
+            MutationOperation(0.03, geneticOperators.mutateAddNode),
             MutationOperation(0.9, geneticOperators.mutateWeights),
-            MutationOperation(0.01, geneticOperators.mutateActivationFunction),
-            MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-        ), CrossOverOperation(geneticOperators.crossMutation, .9), random
+            // MutationOperation(0.01, geneticOperators.mutateActivationFunction),
+            MutationOperation(0.02, geneticOperators.mutateConnectionEnabled)
+        ), CrossOverOperation(geneticOperators.crossMutation, .1), random
     )
 }
 
@@ -43,30 +46,32 @@ private fun createMutationOperations(geneticOperators: GeneticOperators, random:
 private fun createMutationOperationsMaze(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
     return fromList(
         listOf(
-            MutationOperation(0.2, geneticOperators.mutateAddConnection),
-            MutationOperation(0.08, geneticOperators.mutateAddNode),
+            MutationOperation(0.03, geneticOperators.mutateAddConnection),
+            MutationOperation(0.03, geneticOperators.mutateAddNode),
             MutationOperation(0.9, geneticOperators.mutateWeights),
-            MutationOperation(0.1, geneticOperators.mutateActivationFunction),
-            MutationOperation(0.15, geneticOperators.mutateConnectionEnabled)
-        ), CrossOverOperation(geneticOperators.crossMutation, .5), random
+            MutationOperation(0.02, geneticOperators.mutateActivationFunction),
+            MutationOperation(0.02, geneticOperators.mutateConnectionEnabled)
+        ), CrossOverOperation(geneticOperators.crossMutation, .1), random
     )
 }
 
-fun main() {
+fun main() =runBlocking(Dispatchers.Default) {
     val random = Random(1)
+    val resourceUsageLimit = 3
     val stepsAllowed = 100
     val populationSize = 100 // Adjusted for Iris dataset size
-    val mazePopulationSize = 50
+    val mazePopulationSize = 80
     val weightRange = -3.0..3.0
+    
     val dispatcher = Executors.newFixedThreadPool(16).asCoroutineDispatcher()
     val weight = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
     val weightMutationConfig = WeightMutationConfig(weight, .9, (-.01..0.01))
     val weightMaze = GaussianRandomWeight(random, 0.0, 1.0, weightRange.start, weightRange.endInclusive)
-    val weightMazeMutationConfig = WeightMutationConfig(weightMaze, .6, (-.3..0.3))
+    val weightMazeMutationConfig = WeightMutationConfig(weightMaze, .6, (-.01..0.01))
     // Step 3: Initialize components
     val nodeInnovationTracker = InnovationTracker()
     val connectionInnovationTracker = InnovationTracker()
-    val sensorPositions = createSensorPositions(2)
+    val sensorPositions = listOf(Pair(1, 0), Pair(-1, 0), Pair(0, 1), Pair(0, -1))//, Pair(2, 0), Pair(-2, 0), Pair(0, 2), Pair(0, -2))//createSensorPositions(1)
     val agentInitialPopulationGenerator =
         tmazeAgentPopulationGenerator(
             weight,
@@ -77,7 +82,7 @@ fun main() {
             sensorPositions
         )
 
-    val networkProcessorFactory = NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()), 2)
+    val networkProcessorFactory = NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()), true, 10, 0.01)
     val mazeInitialPopulationGenerator =
         mazeCPPNPopulationGenerator(
             weight,
@@ -95,7 +100,7 @@ fun main() {
             nodeInnovationTracker,
             connectionInnovationTracker,
             RandomActivationFunctionSelection(random, ActivationFunction.cppn),
-            weightMazeMutationConfig, true, true, true//, true
+            weightMazeMutationConfig, true, true, true, true
         )
 
     val agentGeneticOperator = createDefaultGeneticOperators(
@@ -105,7 +110,7 @@ fun main() {
         nodeInnovationTracker,
         connectionInnovationTracker,
         SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
-        weightMutationConfig//, true, true, true, true
+        weightMutationConfig, true, true, true, true
     )
     val mazeNetworkGenomeMutator = DefaultGenomeMutator(createMutationOperationsMaze(mazeGeneticOperators, random))
     val mazeGenomeMutator = SimpleMazeGenomeMutator(
@@ -116,9 +121,9 @@ fun main() {
     val mazeEnvironmentCache = MazeEnvironmentCache(networkProcessorFactory, mazeGenomeMutator)
     val mazeAgentCache = MazeAgentCache(networkProcessorFactory)
     val agentGenomeMutator = DefaultGenomeMutator(createMutationOperations(agentGeneticOperator, random))
-    val batchSize = 25
+    val batchSize = 50
     val mazeBatchSize = 5
-    val solutionChannel = Channel<SolutionMapCommand<NetworkGenome, MazeGenome>>()
+    val solutionChannel = Channel<SolutionMapCommand<NetworkGenome, MazeGenome>>(Channel.UNLIMITED)
     val solutionMapUpdater = SolutionMapUpdater(solutionChannel, mutableMapOf())
     val solutionMapCommandSender = SolutionMapCommandSender(solutionChannel)
     val solutionMap = DelegatedSolutionMap(solutionMapUpdater, solutionMapCommandSender)
@@ -126,6 +131,7 @@ fun main() {
     val agentQueuePopulation = BatchQueuePopulation<Agent<NetworkGenome, MazeGenome>>(populationSize, batchSize).also {
         val individuals = agentInitialPopulationGenerator.generatePopulation(populationSize).map { networkGenome ->
             MazeSolverAgent(
+                random,
                 mazeAgentCache,
                 mazeEnvironmentCache,
                 networkGenome,
@@ -137,56 +143,59 @@ fun main() {
         }
         it.addToQueue(individuals)
     }
-
+    
     val environmentQueuePopulation =
         BatchQueuePopulation<Environment<MazeGenome, NetworkGenome>>(mazePopulationSize, mazeBatchSize).also {
             val individuals = mazeInitialPopulationGenerator.generatePopulation(mazePopulationSize / 5).map { networkGenome ->
                 MazeEnvironmentAdapter(
+                    dispatcher = dispatcher,
                     mazeAgentCache = mazeAgentCache,
                     mazeEnvironmentCache = mazeEnvironmentCache,
                     mazeGenomeMutator = mazeGenomeMutator,
                     solutionMap = solutionMap,
                     mazeGenome = MazeGenome(
                         networkGenome = networkGenome,
-                        mazeThresholds = MazeThresholds(.2, .5, .5),
-                        width = 12,
+                        mazeThresholds = MazeThresholds(.5, .5, .5),
+                        width = 36,
                         height = 12
                     ),
-                    resourceUsageLimit = 5,
+                    resourceUsageLimit = resourceUsageLimit,
                     stepsAllowed = stepsAllowed,
                     sensorPositions = sensorPositions
                 )
             }
             it.addToQueue(individuals)
         }
-        
+    
+    
     val mccFramework = MCCFramework(
+        random,
         agentQueuePopulation,
         environmentQueuePopulation,
-        dispatcher
+        dispatcher,
+        maxAgents = agentQueuePopulation.queue.size.toDouble() * .02,
+        minAgents = 1.0,
+        environmentMCTest = { mccFramework, solvedEnvironment -> 
+            solvedEnvironment.agents.size in (mccFramework.minAgents.toInt()..mccFramework.maxAgents.toInt())
+//             solvedEnvironment.agents.size in (mccFramework.minAgents.toInt()..mccFramework.maxAgents.toInt())
+        }
     )
     var generation = 0
-    runBlocking {
+    
 
-        launch {
+        launch(Dispatchers.Default) {
             solutionMapUpdater.init()
         }
-        println("Initializing solution map")
-
-        println("Solution map initialized")
         while (true) {
             solutionMap.clearSolutions()
             if (generation % 500 == 0) {
                 mazeAgentCache.clearCache()
                 mazeEnvironmentCache.clearCache()
             }
-            val (agents, environments) = mccFramework.iterate()
-            if (generation % 10 == 0) {
-                println("Generation: $generation")
-                println("Successful environments: ${environments.size}")
-                println("Successful agents: ${agents.size}")
-                println("Resource usage: ${environmentQueuePopulation.queue.sumOf { it.resourceUsageCount }}")
-                println("Constraint: minAgents: ${mccFramework.minAgents}, maxAgents: ${mccFramework.maxAgents}")
+           val (agents, environments) = mccFramework.iterate()
+            val resourceUsageCount = environmentQueuePopulation.queue.sumOf { it.resourceUsageCount }
+            if (generation % 100 == 0) {
+                report(generation, environments, agents, resourceUsageCount, mccFramework, agentQueuePopulation, environmentQueuePopulation)
                 if (generation % 10 == 0) {
                     environments.forEach { environment ->
                         val generatedMaze = mazeEnvironmentCache.getMazeEnvironment(environment.environment.getModel())
@@ -197,7 +206,7 @@ fun main() {
                             val mazeEnvironment =
                                 TmazeEnvironment(generatedMaze, generatedMaze.width, generatedMaze.height)
                             println(
-                                "Successful environment:\n\n${
+                                "Successful environment:\n(${solution.size})\n${
                                     renderEnvironmentAsString(
                                         mazeEnvironment,
                                         true,
@@ -210,10 +219,27 @@ fun main() {
                     }
                 }
 
-            }
-            generation++
+            
+            
         }
+        generation++
     }
+}
+
+fun report(generation: Int, environments: List<SolvedEnvironment<MazeGenome, NetworkGenome>>, agents: List<Agent<NetworkGenome, MazeGenome>>, resourceUsageCount: Int, mccFramework: MCCFramework<NetworkGenome, MazeGenome>, agentQueuePopulation: BatchQueuePopulation<Agent<NetworkGenome, MazeGenome>>, environmentQueuePopulation: BatchQueuePopulation<Environment<MazeGenome, NetworkGenome>>) {
+    println("Generation: $generation")
+                println("Successful environments: ${environments.size}")
+                println("Successful agents: ${agents.size}")
+                println("Resource usage: ${resourceUsageCount}")
+                println("Constraint: minAgents: ${mccFramework.minAgents}, maxAgents: ${mccFramework.maxAgents}")
+                println("================")
+                println("Total Agent Population: ${agentQueuePopulation.queue.size}")
+                println("Total Agent Population Genomes: ${agentQueuePopulation.queue.sumOf { it.getModel().nodeGenomes.size }} - ${agentQueuePopulation.queue.sumOf { it.getModel().connectionGenes.size }}")
+                println("Average Agent Population Genomes: ${agentQueuePopulation.queue.sumOf { it.getModel().nodeGenomes.size } / agentQueuePopulation.queue.size.toDouble()} - ${agentQueuePopulation.queue.sumOf { it.getModel().connectionGenes.size } / agentQueuePopulation.queue.size.toDouble()}")
+                println("================")
+                println("Total Environment Population: ${environmentQueuePopulation.queue.size}")
+                println("Total Environment Population Genomes: ${environmentQueuePopulation.queue.sumOf { it.getModel().networkGenome.nodeGenomes.size }} - ${environmentQueuePopulation.queue.sumOf { it.getModel().networkGenome.connectionGenes.size }}")
+                println("Average Environment Population Genomes: ${environmentQueuePopulation.queue.sumOf { it.getModel().networkGenome.nodeGenomes.size } / environmentQueuePopulation.queue.size.toDouble()} - ${environmentQueuePopulation.queue.sumOf { it.getModel().networkGenome.connectionGenes.size } / environmentQueuePopulation.queue.size.toDouble()}")
 }
 
 

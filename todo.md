@@ -13,8 +13,8 @@
 - [x] implement maze problem with sensors
 - [ ] port neat network building and execution to python
   - [ ] Test in parallel environments and verify parity
-- [ ] Implement Maze generation with CPPN
-- [ ] Implement MCC for maze problem
+- [x] Implement Maze generation with CPPN
+- [x] Implement MCC for maze problem
   - MCC (Minimal Criterion coevolution) is a method to evolve a population of agents to solve a problem by evolving a population of problem instances.
   - The problem instances are evolved to be as difficult as possible for the agents to solve.
   - The agents are evolved to solve the problem instances.
@@ -37,6 +37,18 @@
 
 
 ## Other
-- fix so no fitness values leak between generations
+- [x] fix so no fitness values leak between generations
   - only cross mutations are causing the fitness values and species to get reset
   - stil need to make sure children still have their species at the end of the process
+
+
+## TODO
+- [ ] Create python runner for NEAT model networks
+  - [ ] implement hyperneat in python
+  - [ ] implement maze problem in python?
+- [ ] Publish artifact to be used in meleeNEAT
+- [ ] Integrate into meleeNeat
+  - [ ] Rewrite runners for meleeNeat to use the new model
+  - [ ] Rewrite runners for marioHyperNeat to use the new model
+  - [ ] 
+

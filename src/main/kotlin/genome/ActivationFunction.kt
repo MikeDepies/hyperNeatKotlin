@@ -11,7 +11,7 @@ enum class ActivationFunction {
     ABS,
     STEP;
     companion object {
-        val cppn = listOf(IDENTITY, SIGMOID, TANH, RELU, GAUSSIAN, SINE, COS, ABS, STEP)
+        val cppn = listOf(IDENTITY, SIGMOID, TANH, RELU, GAUSSIAN, SINE, COS, ABS,  STEP)
     } 
 }
 

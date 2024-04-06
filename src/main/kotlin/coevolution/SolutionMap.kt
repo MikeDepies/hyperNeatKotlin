@@ -9,9 +9,9 @@ import java.util.concurrent.CompletableFuture
 
 data class AgentSolution<A, E>(val agent: Agent<A, E>, val solution: List<Position>)
 interface SolutionMap<A, E> {
-    fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>)
+    suspend fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>)
     suspend fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>?
-    fun clearSolutions()
+    suspend fun clearSolutions()
 }
 
 sealed class SolutionMapCommand<A, E>
@@ -20,23 +20,23 @@ data class AddSolutionCommand<A, E>(val agent: AgentEnvironmentPair<A, E>, val s
     data class GetSolutionCommand<A, E>(val environment: Environment<E, A>,val deferred: CompletableDeferred<List<AgentSolution<A, E>>?>) : SolutionMapCommand<A, E>()
 object ClearSolutionsCommand : SolutionMapCommand<Nothing, Nothing>()
 class SolutionMapCommandSender<A, E>(private val solutionChannel: Channel<SolutionMapCommand<A, E>>) {
-    fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
-        solutionChannel.trySend(AddSolutionCommand(agent, solution))
+    suspend fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
+        solutionChannel.send(AddSolutionCommand(agent, solution))
     }
 
-    fun getSolution(environment: Environment<E, A>, promise: CompletableDeferred<List<AgentSolution<A, E>>?>) {
-        solutionChannel.trySend(GetSolutionCommand(environment, promise))
+    suspend fun getSolution(environment: Environment<E, A>, promise: CompletableDeferred<List<AgentSolution<A, E>>?>) {
+        solutionChannel.send(GetSolutionCommand(environment, promise))
     }
 
-    fun clearSolutions() {
-        solutionChannel.trySend(ClearSolutionsCommand as SolutionMapCommand<A, E>)
+    suspend fun clearSolutions() {
+        solutionChannel.send(ClearSolutionsCommand as SolutionMapCommand<A, E>)
     }
 }
 
 class SolutionMapSimple<A, E> : SolutionMap<A, E> {
     private val map: MutableMap<Environment<E, A>, MutableList<AgentSolution<A, E>>> = mutableMapOf()
 
-    override fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
+    override suspend fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
         val currentSolutions = map.getOrPut(agent.environment) { mutableListOf() }
         currentSolutions += AgentSolution(agent.agent, solution)
     }
@@ -45,7 +45,7 @@ class SolutionMapSimple<A, E> : SolutionMap<A, E> {
         return map[environment]
     }
 
-    override fun clearSolutions() {
+    override suspend fun clearSolutions() {
         map.clear()
     }
 }
@@ -55,18 +55,17 @@ class DelegatedSolutionMap<A, E>(
     private val solutionMapCommandSender: SolutionMapCommandSender<A, E>,
 
     ) : SolutionMap<A, E> {
-    override fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
+    override suspend fun addSolution(agent: AgentEnvironmentPair<A, E>, solution: List<Position>) {
         solutionMapCommandSender.addSolution(agent, solution)
     }
 
     override suspend fun getSolution(environment: Environment<E, A>): List<AgentSolution<A, E>>? {
         val deferred = CompletableDeferred<List<AgentSolution<A, E>>?>()
-        val command = GetSolutionCommand(environment, deferred)
         solutionMapCommandSender.getSolution(environment, deferred)
         return deferred.await()
     }
 
-    override fun clearSolutions() {
+    override suspend fun clearSolutions() {
         solutionMapCommandSender.clearSolutions()
     }
 }

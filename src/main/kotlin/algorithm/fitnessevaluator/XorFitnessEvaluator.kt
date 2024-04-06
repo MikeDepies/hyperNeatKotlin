@@ -17,7 +17,7 @@ class XorFitnessEvaluator : FitnessEvaluator {
     )
 
     override fun calculateFitness(genome: NetworkGenome): Double {
-        val networkProcessorFactory = NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()))
+        val networkProcessorFactory = NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()), false)
         val networkProcessor = networkProcessorFactory.createProcessor(genome)
         var fitness = 0.0
 

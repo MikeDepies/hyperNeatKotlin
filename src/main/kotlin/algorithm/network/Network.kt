@@ -1,6 +1,7 @@
 package algorithm.network
 
 import genome.*
+import java.util.Stack
 
 class Node(
         val id: Int,
@@ -61,6 +62,9 @@ class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
     val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
     val inputNodes = network.nodes.filter { it.type == NodeType.INPUT }
     val sortedNodes = network.nodes.sortedBy { it.type.ordinal }
+    // Preprocess connections to map output node IDs to their input connections
+    val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
+    val nodeMap = network.nodes.associateBy { it.id }
     override fun feedforward(inputValues: List<Double>): List<Double> {
         network.nodes.forEach { it.inputValue = 0.0 } // Reset node input values
         
@@ -71,9 +75,7 @@ class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
             node.inputValue = inputValues[index]
         }
 
-        // Preprocess connections to map output node IDs to their input connections
-        val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
-        val nodeMap = network.nodes.associateBy { it.id }
+        
         // Process nodes in order of their types
         sortedNodes.forEach { node ->
             inputConnectionsByOutputNodeId[node.id]?.forEach { connection ->
@@ -92,7 +94,9 @@ class NetworkProcessorSimple(private val network: Network) : NetworkProcessor {
 class NetworkProcessorStateful(private val network: Network, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) : NetworkProcessor {
     private val outputNodes = network.nodes.filter { it.type == NodeType.OUTPUT }
     private val inputNodes = network.nodes.filter { it.type == NodeType.INPUT }
-
+    val sortedNodes = network.nodes.sortedBy { it.type.ordinal }
+    val nodeMap = network.nodes.associateBy { it.id }
+    val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
     override fun feedforward(inputValues: List<Double>): List<Double> {
         resetInputValues()
         assignInputValues(inputValues)
@@ -100,9 +104,7 @@ class NetworkProcessorStateful(private val network: Network, val maxIterations: 
         var previousOutputValues = outputNodes.map(Node::outputValue)
         var iteration = 0
         var converged = false
-        val sortedNodes = network.nodes.sortedBy { it.type.ordinal }
-        val nodeMap = network.nodes.associateBy { it.id }
-        val inputConnectionsByOutputNodeId = network.connections.groupBy { it.outputNodeId }
+        
         while (iteration < maxIterations && !converged) {
             processNodes(sortedNodes, nodeMap, inputConnectionsByOutputNodeId)
 
@@ -138,9 +140,9 @@ class NetworkProcessorStateful(private val network: Network, val maxIterations: 
     }
 }
 
-class NetworkProcessorFactory(val networkBuilder: NetworkBuilder, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) {
+class NetworkProcessorFactory(val networkBuilder: NetworkBuilder, val cyclic : Boolean, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) {
     fun createProcessor(genome: NetworkGenome): NetworkProcessor {
-        return if (NetworkCycleTester(networkBuilder.buildNetworkFromGenome(genome)).hasCyclicConnections()) {
+        return if (cyclic && NetworkCycleTester(networkBuilder.buildNetworkFromGenome(genome)).hasCyclicConnections()) {
             NetworkProcessorStateful(networkBuilder.buildNetworkFromGenome(genome), maxIterations, convergenceThreshold)
         } else {
             NetworkProcessorSimple(networkBuilder.buildNetworkFromGenome(genome))
@@ -160,51 +162,85 @@ class NetworkCycleTester(val network: Network) {
     }
 
     private fun dfs(currentNodeId: Int, visited: HashSet<Int>, recStack: HashSet<Int>): Boolean {
-        if (recStack.contains(currentNodeId)) return true
-        if (visited.contains(currentNodeId)) return false
+        val stack = mutableListOf<Int>()
+        stack.add(currentNodeId)
 
-        visited.add(currentNodeId)
-        recStack.add(currentNodeId)
+        while (stack.isNotEmpty()) {
+            val nodeId = stack.last()
 
-        val childNodes = network.connections.filter { it.inputNodeId == currentNodeId }.map { it.outputNodeId }
-        for (childNodeId in childNodes) {
-            if (dfs(childNodeId, visited, recStack)) return true
+            if (!visited.contains(nodeId)) {
+                if (recStack.contains(nodeId)) return true
+                visited.add(nodeId)
+                recStack.add(nodeId)
+                val childNodes = network.connections.filter { it.inputNodeId == nodeId }.map { it.outputNodeId }
+                stack.addAll(childNodes)
+            } else {
+                recStack.remove(nodeId)
+                stack.removeAt(stack.size - 1)
+            }
         }
-
-        recStack.remove(currentNodeId)
         return false
     }
 
 }
-
 class NetworkGenomeTester {
 
     fun hasCyclicConnections(genome: NetworkGenome): Boolean {
         val visited = hashSetOf<Int>()
         val recStack = hashSetOf<Int>()
 
-        for (nodeGenome in genome.nodeGenomes) {
-            if (dfs(nodeGenome.id, genome, visited, recStack)) return true
+        for (currentNodeId in genome.nodeGenomes.map { it.id }) {
+            if (!visited.contains(currentNodeId)) {
+                if (isCyclicUtil(currentNodeId, genome, visited, recStack)) {
+                    return true
+                }
+            }
         }
         return false
     }
 
-    private fun dfs(currentNodeId: Int, genome: NetworkGenome, visited: HashSet<Int>, recStack: HashSet<Int>): Boolean {
-        if (recStack.contains(currentNodeId)) return true
-        if (visited.contains(currentNodeId)) return false
+    private fun isCyclicUtil(startNodeId: Int, genome: NetworkGenome, visited: HashSet<Int>, recStack: HashSet<Int>): Boolean {
+        val stack = mutableListOf<Pair<Int, Iterator<Int>>>()
 
-        visited.add(currentNodeId)
-        recStack.add(currentNodeId)
+        // Add start node to stack
+        stack.add(Pair(startNodeId, getChildNodeIds(startNodeId, genome).iterator()))
 
-        val childNodeIds = genome.connectionGenes
-            .filter { it.inputNode.id == currentNodeId }
-            .map { it.outputNode.id }
+        while (stack.isNotEmpty()) {
+            val (nodeId, iterator) = stack.last()
 
-        for (childNodeId in childNodeIds) {
-            if (dfs(childNodeId, genome, visited, recStack)) return true
+            if (!visited.contains(nodeId)) {
+                visited.add(nodeId)
+                recStack.add(nodeId)
+            }
+
+            var cycleDetected = false
+            while (iterator.hasNext()) {
+                val childNodeId = iterator.next()
+
+                if (recStack.contains(childNodeId)) {
+                    cycleDetected = true
+                    break
+                } else if (!visited.contains(childNodeId)) {
+                    stack.add(Pair(childNodeId, getChildNodeIds(childNodeId, genome).iterator()))
+                    cycleDetected = false
+                    break
+                }
+            }
+
+            if (cycleDetected) {
+                return true
+            } else if (!iterator.hasNext()) {
+                recStack.remove(nodeId)
+                stack.removeAt(stack.size - 1)
+            }
         }
 
-        recStack.remove(currentNodeId)
         return false
+    }
+
+    private fun getChildNodeIds(nodeId: Int, genome: NetworkGenome): List<Int> {
+        return genome.connectionGenes
+            .filter { it.inputNode.id == nodeId && it.enabled }
+            .map { it.outputNode.id }
     }
 }

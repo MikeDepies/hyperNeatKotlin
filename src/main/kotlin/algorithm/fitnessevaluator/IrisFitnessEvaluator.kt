@@ -11,7 +11,7 @@ class IrisFitnessEvaluator(private val random : Random) : FitnessEvaluator {
     private val dataset = createFakeData()
 
     override fun calculateFitness(genome: NetworkGenome): Double {
-        val networkProcessorFactory = NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()))
+        val networkProcessorFactory = NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()), false)
         val networkProcessor = networkProcessorFactory.createProcessor(genome)
         var correctClassifications = 0
 

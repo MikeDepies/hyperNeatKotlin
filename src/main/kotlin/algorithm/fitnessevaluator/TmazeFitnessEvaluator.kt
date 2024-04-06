@@ -19,7 +19,7 @@ class TmazeFitnessEvaluator(val environment: TmazeEnvironment) : FitnessEvaluato
         val mazeBoundaries = Pair(Position(0, 0), Position(environment.width - 1, environment.height - 1))
         val stateEncoderDecoder = StateEncoderDecoder(mazeBoundaries)
         val networkProcessor =
-                NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()))
+                NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()), false)
                         .createProcessor(genome)
 
         for (step in 0 until stepsAllowed) {
@@ -53,7 +53,7 @@ class MazeFitnessEvaluatorSensor(
         val enhancedStateEncoderDecoder =
                 EnhancedStateEncoderDecoder(mazeBoundaries, sensorInputGenerator)
         val networkProcessor =
-                NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()))
+                NetworkProcessorFactory(NetworkBuilder(DefaultActivationFunctionMapper()), false)
                         .createProcessor(genome)
 
         for (step in 0 until stepsAllowed) {

@@ -87,12 +87,12 @@ fun createTMaze(rewardSide: RewardSide, random: Random): MazeEnvironment {
 
 data class MazeSolution(val reachedGoal: Boolean, val reward: Double, val agentPosition: Position)
 class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val height: Int) {
-    var agentPosition = environment.agentPosition // Starting position at the base of the T
-    val goalPosition = environment.goalPosition
+    var agentPosition = environment.agentPosition.copy() // Starting position at the base of the T
+    val goalPosition = environment.goalPosition.copy()
     val mazeStructure = environment.mazeStructure
 
     fun reset() {
-        agentPosition = environment.agentPosition
+        agentPosition = environment.agentPosition.copy()
     }
 
     fun step(action: Action): MazeSolution {
@@ -103,10 +103,17 @@ class TmazeEnvironment(val environment: MazeEnvironment, val width: Int, val hei
             Action.MOVE_BACKWARD -> agentPosition.copy(y = agentPosition.y - 1)
         }
 
+        val isStepValid = kotlin.math.abs(newPosition.x - agentPosition.x) + kotlin.math.abs(newPosition.y - agentPosition.y) == 1
+        if (!isStepValid) {
+            println("Invalid step: Agent attempted to move more than 1 tile.")
+            return MazeSolution(false, -1.0, agentPosition) // Return current position with penalty
+        }
+
         // Check if the new position is within the maze structure and within the boundaries
         if (newPosition !in mazeStructure && newPosition.x in 0 until width && newPosition.y in 0 until height) {
             agentPosition = newPosition
         }
+
 
         val reachedGoal = agentPosition == goalPosition
         val reward = calculateReward(reachedGoal)

@@ -8,14 +8,16 @@ import algorithm.fitnessevaluator.EnhancedStateEncoderDecoder
 import algorithm.network.NetworkProcessor
 import environment.*
 import genome.NetworkGenome
+import kotlin.random.Random
 
 interface Agent<M, E> {
     fun mutate(potentialMates: List<Agent<M, E>>): Agent<M, E>
-    fun satisfiesMinimalCriterion(environment: Environment<E, M>): Boolean
+    suspend fun satisfiesMinimalCriterion(environment: Environment<E, M>): Boolean
     fun getModel(): M
 }
 
 class MazeSolverAgent(
+    private val random: Random,
     private val mazeAgentCache: MazeAgentCache,
     private val mazeEnvironmentCache: MazeEnvironmentCache,
     private val genome: NetworkGenome,
@@ -27,12 +29,12 @@ class MazeSolverAgent(
 ) : Agent<NetworkGenome, MazeGenome> {
     override fun mutate(potentialMates: List<Agent<NetworkGenome, MazeGenome>>): Agent<NetworkGenome, MazeGenome> {
         
-        val mutatedGenome = if (genomeMutator.rollCrossMutation()) genomeMutator.crossMutateGenomes(genome, potentialMates.random().getModel()) else genomeMutator.mutateGenome(genome)
+        val mutatedGenome = if (genomeMutator.rollCrossMutation()) genomeMutator.crossMutateGenomes(genome, potentialMates.random(random).getModel()) else genomeMutator.mutateGenome(genome)
         
-        return MazeSolverAgent(mazeAgentCache,mazeEnvironmentCache, mutatedGenome, genomeMutator, solutionMap, stepsAllowed, sensorPositions)
+        return MazeSolverAgent(random, mazeAgentCache,mazeEnvironmentCache, mutatedGenome, genomeMutator, solutionMap, stepsAllowed, sensorPositions)
     }
 
-    override fun satisfiesMinimalCriterion(environment: Environment<MazeGenome, NetworkGenome>): Boolean {
+    override suspend fun satisfiesMinimalCriterion(environment: Environment<MazeGenome, NetworkGenome>): Boolean {
         // if (environment !is MazeEnvironmentAdapter) return false
         val mazeEnvironment = environment.getModel()
         val generatedMaze = mazeEnvironmentCache.getMazeEnvironment(mazeEnvironment)

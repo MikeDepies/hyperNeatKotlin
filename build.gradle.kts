@@ -14,6 +14,7 @@ repositories {
 
 
 dependencies {
+    implementation("org.jetbrains.kotlinx:multik-core-jvm:0.2.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1-Beta")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("io.kotest:kotest-runner-junit5:$kotest")

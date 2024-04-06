@@ -6,7 +6,10 @@ import algorithm.network.NetworkProcessorFactory
 import genome.NetworkGenome
 import algorithm.GenomeMutator
 import algorithm.fitnessevaluator.SensorInputGenerator
+import kotlinx.coroutines.CoroutineDispatcher
+import java.lang.Math.abs
 import kotlin.random.Random
+import java.util.concurrent.ConcurrentHashMap
 
 interface Environment<E, A> {
     fun mutate(potentialMates: List<Environment<E, A>>): Environment<E, A>
@@ -14,7 +17,7 @@ interface Environment<E, A> {
     var resourceUsageCount: Int
     fun isResourceAvailable(): Boolean
     
-    fun testAgents(agents: List<Agent<A, E>>): List<Agent<A, E>>
+    suspend fun testAgents(agents: List<Agent<A, E>>): List<Agent<A, E>>
     fun getModel(): E
 }
 
@@ -107,6 +110,7 @@ class SimpleMazeGenomeMutator(
     }
 }
 class MazeEnvironmentAdapter(
+    private val dispatcher: CoroutineDispatcher,
     private val mazeAgentCache: MazeAgentCache,
     private val mazeEnvironmentCache: MazeEnvironmentCache,
     private val mazeGenomeMutator: MazeGenomeMutator,
@@ -129,6 +133,7 @@ class MazeEnvironmentAdapter(
 
         // Return a new instance of MazeEnvironmentAdapter with the mutated genome
         return MazeEnvironmentAdapter(
+            dispatcher,
             mazeAgentCache,
             mazeEnvironmentCache,
             mazeGenomeMutator,
@@ -151,22 +156,34 @@ class MazeEnvironmentAdapter(
     //     return mazeSolverTester.canSolveMaze(agent.getModel()).mazeFinished
     // }
 
-    override fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): List<Agent<NetworkGenome, MazeGenome>> {
+    override suspend fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): List<Agent<NetworkGenome, MazeGenome>> {
         val mazeEnvironment = mazeEnvironmentCache.getMazeEnvironment(mazeGenome)
         if (mazeEnvironment == null) {
             return emptyList()
         }
-        val tmazeEnvironment = TmazeEnvironment(mazeEnvironment, mazeEnvironment.width, mazeEnvironment.height)
+        
+        
+        val solvedAgents = agents.asyncFilterAndJoin(dispatcher) { agent ->
+            val tmazeEnvironment = TmazeEnvironment(mazeEnvironment, mazeEnvironment.width, mazeEnvironment.height)
         // if (shortestPathToGoal(tmazeEnvironment) < 1) {
         //     return false
         // }
         val mazeSolverTester = MazeSolverTester(mazeAgentCache, SensorInputGenerator(tmazeEnvironment, sensorPositions), tmazeEnvironment, stepsAllowed)
-        
-        val solvedAgents = agents.filter { agent -> 
             tmazeEnvironment.reset()
             val result = mazeSolverTester.canSolveMaze(agent.getModel())
-            if (result.mazeFinished)
+            if (result.mazeFinished) {
                 solutionMap.addSolution(AgentEnvironmentPair(agent, this), result.visitedPositions)
+//           val isMovementValid = result.visitedPositions.zipWithNext().all { (current, next) ->
+//               val dx = kotlin.math.abs(current.x - next.x)
+//               val dy = kotlin.math.abs(current.y - next.y)
+//               (dx + dy).also { if (it != 1) println("${dx} ${dy} = current: ${current} next: ${next}") } == 1
+//           }
+//           if (!isMovementValid) {
+//               // Handle invalid movement scenario
+//
+//               println("Invalid movement detected in maze solution path.")
+//            }
+            }
             result.mazeFinished
         }
         
@@ -178,18 +195,31 @@ class MazeEnvironmentCache(
     private val networkProcessorFactory: NetworkProcessorFactory,
     private val mazeGenomeMutator: MazeGenomeMutator
 ) {
-    private val cache: MutableMap<NetworkGenome, MazeEnvironment?> = mutableMapOf()
+    private val cache: ConcurrentHashMap<NetworkGenome, MazeEnvironment?> = ConcurrentHashMap()
+    private val nullMazes = ConcurrentHashMap<NetworkGenome, Boolean>()
 
     fun getMazeEnvironment(mazeGenome: MazeGenome): MazeEnvironment? {
-        return cache.getOrPut(mazeGenome.networkGenome) {
-            val networkProcessor = networkProcessorFactory.createProcessor(mazeGenome.networkGenome)
-            val cppnMazeQuery = CPPNMazeQuery(networkProcessor)
-            val cppnMazeGenerator = CPPNMazeGenerator(mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height)
-            cppnMazeGenerator.generateMaze(cppnMazeQuery)
+        if (nullMazes.contains(mazeGenome.networkGenome)) {
+            return null
         }
+        cache[mazeGenome.networkGenome]?.let { return it }
+
+        val networkProcessor = networkProcessorFactory.createProcessor(mazeGenome.networkGenome)
+        val cppnMazeQuery = CPPNMazeQuery(networkProcessor)
+        val cppnMazeGenerator = CPPNMazeGenerator(mazeGenome.mazeThresholds, mazeGenome.width, mazeGenome.height)
+        val mazeEnvironment = cppnMazeGenerator.generateMaze(cppnMazeQuery)
+        
+        if (mazeEnvironment != null) {
+            cache[mazeGenome.networkGenome] = mazeEnvironment
+        } else {
+            nullMazes.put(mazeGenome.networkGenome, true)
+        }
+        
+        return mazeEnvironment
     }
     fun clearCache() {
         cache.clear()
+        nullMazes.clear()
     }
 }
 
