@@ -124,7 +124,7 @@ fun initializeSimulationConfig(sensorPositions: List<Position>): SimulationConfi
     val mazeMutation = MutationConfig(
         weightRangesConfig = WeightRangesConfig(
             weightRange = -3.0..3.0,
-            weightPerturbation = -0.01..0.01,
+            weightPerturbation = -0.001..0.001,
             perturbationChance = 0.6,
             allowCyclicConnections = false, 
             allowSelfConnections = false,

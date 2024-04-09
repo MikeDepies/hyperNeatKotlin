@@ -196,7 +196,7 @@ fun main() = runBlocking(Dispatchers.Default) {
         when (mode) {
             0 -> {
                 mccFramework.minAgents = 1.0
-                mccFramework.maxAgents = 5.0
+                mccFramework.maxAgents = 50.0
             }
 
             1 -> {
