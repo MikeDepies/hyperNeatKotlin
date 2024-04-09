@@ -144,9 +144,9 @@ fun main() = runBlocking(Dispatchers.Default) {
                         solutionMap = solutionMap,
                         mazeGenome = MazeGenome(
                             networkGenome = networkGenome,
-                            mazeThresholds = MazeThresholds(.5, .5, .5),
-                            width = 24,
-                            height = 24
+                            mazeThresholds = simulationConfig.mazeDefinition.mazeThresholds,
+                            width = simulationConfig.mazeDefinition.width,
+                            height = simulationConfig.mazeDefinition.height
                         ),
                         resourceUsageLimit = simulationConfig.resourceUsageLimit,
                         stepsAllowed = simulationConfig.stepsAllowed,

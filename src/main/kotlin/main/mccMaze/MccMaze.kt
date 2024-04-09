@@ -33,6 +33,12 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import java.util.concurrent.Executors
 
+data class MazeDefinition(
+    val width: Int,
+    val height: Int,
+    val mazeThresholds: MazeThresholds
+)
+
 data class WeightRangesConfig(
     val weightRange: ClosedFloatingPointRange<Double>,
     val perturbationChance: Double,
@@ -84,7 +90,8 @@ data class SimulationConfig(
     val sensorPositions: List<Position>,
     val mutationOperations: PopulationConfig,
     val mazeMutationOperations: PopulationConfig,
-    val threadPoolSize: Int
+    val threadPoolSize: Int,
+    val mazeDefinition: MazeDefinition
 )
 
 // data class WeightConfig(
@@ -135,8 +142,8 @@ fun initializeSimulationConfig(sensorPositions: List<Position>): SimulationConfi
             MutationOperationConfig(0.03, MutationType.ADD_CONNECTION),
             MutationOperationConfig(0.002, MutationType.ADD_NODE),
             MutationOperationConfig(0.9, MutationType.MUTATE_WEIGHTS),
-            MutationOperationConfig(0.02, MutationType.MUTATE_ACTIVATION_FUNCTION),
-            MutationOperationConfig(0.02, MutationType.MUTATE_CONNECTION_ENABLED)
+            MutationOperationConfig(0.2, MutationType.MUTATE_ACTIVATION_FUNCTION),
+            MutationOperationConfig(0.2, MutationType.MUTATE_CONNECTION_ENABLED)
         ),
         geneticOperatorConfig = GeneticOperatorConfig(
             ActivationFunctionSelectionMode.Random(mazeActivationFunctions),
@@ -171,11 +178,15 @@ fun initializeSimulationConfig(sensorPositions: List<Position>): SimulationConfi
             connectionInnovationNumber = 0,
             inputNodes = 3,
             outputNodes = 3,
-            hiddenNodes = 2,
+            hiddenNodes = 0,
             connectionDensity = 1.0,
             activationFunctions = mazeActivationFunctions
+        ),
+        mazeDefinition = MazeDefinition(
+            width = 10,
+            height = 10,
+            mazeThresholds = MazeThresholds(0.5, 0.5, .5)
         )
-
     )
 }
 
