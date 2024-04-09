@@ -13,8 +13,9 @@ class MutateEveryActivationFunction(
     override val activationSelection: ActivationFunctionSelection
 ) : MutateActivationFunctionOperator {
     override fun apply(genome: NetworkGenome): NetworkGenome {
+        val index = genome.nodeGenomes.indices.random(random)
         val updatedNodeGenomes =
-                genome.nodeGenomes.map { it.copy(activationFunction = activationSelection.select()) }
+                genome.nodeGenomes.mapIndexed { i, it -> if (i == index) it.copy(activationFunction = activationSelection.select()) else it }
         return genome.copy(nodeGenomes = updatedNodeGenomes,
             fitness = null,
             sharedFitness = null,

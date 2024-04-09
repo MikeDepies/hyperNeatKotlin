@@ -13,14 +13,14 @@ import kotlin.random.Random
 
 private fun createXorCoefficients() = Coefficients(1.0, 1.0, 0.4)
 
-private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
+private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorOperationConfig {
     return fromList(listOf(
         MutationOperation(.04, geneticOperators.mutateAddConnection),
         MutationOperation(.001, geneticOperators.mutateAddNode),
         MutationOperation(0.9, geneticOperators.mutateWeights),
         // MutationOperation(0.04, geneticOperators.mutateActivationFunction),
         MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-    ), CrossOverOperation(geneticOperators.crossMutation), random)
+    ), CrossOverOperation(geneticOperators.crossMutation, .7), random)
 }
 
 fun main() {
@@ -50,7 +50,6 @@ fun main() {
     val geneticOperators =
         createDefaultGeneticOperators(
             crossMutation,
-            listOf(ActivationFunction.SIGMOID),
             random,
             nodeInnovationTracker,
             connectionInnovationTracker,
@@ -58,7 +57,7 @@ fun main() {
                 ActivationFunction.SIGMOID
             ),
             weightMutationConfig,
-
+            false, false, false, false
         )
 
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators, random))

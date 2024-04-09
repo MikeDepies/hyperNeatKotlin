@@ -74,18 +74,18 @@ class MazeFitnessEvaluatorSensor(
     }
 }
 
-fun createSensorPositions(sensorRange: Int): List<Pair<Int, Int>> {
-    val directions = mutableListOf<Pair<Int, Int>>()
-    for (i in -sensorRange..sensorRange) {
-        for (j in -sensorRange..sensorRange) {
-            if (i != 0 || j != 0) {
-                directions.add(Pair(i, j))
+fun createSensorPositions(sensorRange: Int): List<Position> {
+    val directions = mutableListOf<Position>()
+    for (y in -sensorRange..sensorRange) {
+        for (x in -sensorRange..sensorRange) {
+            if (x != 0 || y != 0) {
+                directions.add(Position(x, y))
             }
         }
     }
     return directions
 }
-class SensorInputGenerator(val environment: TmazeEnvironment, private val directions: List<Pair<Int, Int>>) {
+class SensorInputGenerator(val environment: TmazeEnvironment, private val directions: List<Position>) {
 
     fun generateSensorData(): List<Double> {
         return directions.map { (dx, dy) ->

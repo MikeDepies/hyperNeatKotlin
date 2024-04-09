@@ -17,7 +17,7 @@ interface Environment<E, A> {
     var resourceUsageCount: Int
     fun isResourceAvailable(): Boolean
     
-    suspend fun testAgents(agents: List<Agent<A, E>>): List<Agent<A, E>>
+    suspend fun testAgents(agents: List<Agent<A, E>>): List<Agent<A, E>>?
     fun getModel(): E
 }
 
@@ -111,13 +111,13 @@ class SimpleMazeGenomeMutator(
 }
 class MazeEnvironmentAdapter(
     private val dispatcher: CoroutineDispatcher,
-    private val mazeAgentCache: MazeAgentCache,
+    private val mazeAgentCache: AgentCache<NetworkGenome, MazeGenome>,
     private val mazeEnvironmentCache: MazeEnvironmentCache,
     private val mazeGenomeMutator: MazeGenomeMutator,
     private val solutionMap: SolutionMap<NetworkGenome, MazeGenome>,
     // private val networkProcessorFactory: NetworkProcessorFactory,
     private val mazeGenome: MazeGenome,
-    val sensorPositions: List<Pair<Int, Int>>,
+    val sensorPositions: List<Position>,
     override val resourceUsageLimit: Int,
     private val stepsAllowed: Int,
     override var resourceUsageCount: Int = 0,
@@ -156,10 +156,10 @@ class MazeEnvironmentAdapter(
     //     return mazeSolverTester.canSolveMaze(agent.getModel()).mazeFinished
     // }
 
-    override suspend fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): List<Agent<NetworkGenome, MazeGenome>> {
+    override suspend fun testAgents(agents: List<Agent<NetworkGenome, MazeGenome>>): List<Agent<NetworkGenome, MazeGenome>>? {
         val mazeEnvironment = mazeEnvironmentCache.getMazeEnvironment(mazeGenome)
         if (mazeEnvironment == null) {
-            return emptyList()
+            return null
         }
         
         

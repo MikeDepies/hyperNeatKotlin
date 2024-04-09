@@ -26,8 +26,8 @@ class MutateAddNodeOperatorImpl(
     override fun apply(genome: NetworkGenome): NetworkGenome {
         val enabledConnections = genome.connectionGenes.filter { it.enabled }
         if (enabledConnections.isEmpty()) return genome
-        val randomConnectionIndex = random.nextInt(enabledConnections.size)
-        val connectionToSplit = genome.connectionGenes[randomConnectionIndex]
+//        val randomConnectionIndex = random.nextInt(enabledConnections.size)
+        val connectionToSplit = genome.connectionGenes.random(random)
 
         // Disable the old connection
         val disabledConnection = connectionToSplit.copy(enabled = false)
@@ -53,20 +53,28 @@ class MutateAddNodeOperatorImpl(
                 weight = connectionToSplit.weight,
                 enabled = true
             )
-
+//        println("=====****====")
+//        println("$connectionToSplit")
+//        println("$newConnection1")
+//        println("$newConnection2")
         // Update the genome
         val updatedNodeGenomes = genome.nodeGenomes + newNode
         val updatedConnectionGenes =
             genome.connectionGenes.map {
-                if (it.id == connectionToSplit.id) disabledConnection else it
+                if (it.id == connectionToSplit.id)
+                    disabledConnection else it
             } + newConnection1 + newConnection2
-
+//        println("<<<<")
+//        println(genome.connectionGenes.takeLast(5))
+//        println(">>>")
+//        println(updatedConnectionGenes.takeLast(5))
+//        println("Adding node $newNodeId between ${newConnection1.inputNode.id} and ${newConnection2.outputNode.id}")
         return genome.copy(
             nodeGenomes = updatedNodeGenomes,
             connectionGenes = updatedConnectionGenes,
             fitness = null,
             sharedFitness = null,
             speciesId = null
-        )
+        )//.also { println("new network:\n$it $\n\n") }
     }
 }

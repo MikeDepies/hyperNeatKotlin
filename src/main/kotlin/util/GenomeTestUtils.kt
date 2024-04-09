@@ -15,7 +15,7 @@ object GenomeTestUtils {
             val uniqueIds = connectionIds.toSet()
             if (connectionIds.size != uniqueIds.size) {
                 count++
-                println("Genome ${genome} has overlapping connection IDs.")
+                // println("Genome ${genome} has overlapping connection IDs.")
             }
         }
         return count

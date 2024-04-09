@@ -48,6 +48,7 @@ class MutateAddConnectionOperatorImpl(
                 weight = randomWeight.invoke(),
                 enabled = true
             )
+            // println("Adding connection $newConnectionId from ${newConnection.inputNode.id} to ${newConnection.outputNode.id}")
 
             return genome.copy(connectionGenes = genome.connectionGenes + newConnection,
                 fitness = null,

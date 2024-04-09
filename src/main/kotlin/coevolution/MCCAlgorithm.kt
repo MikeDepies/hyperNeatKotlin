@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 data class SolvedEnvironment<E, A>(
     val environment: Environment<E, A>,
-    val agents: List<Agent<A, E>>
+    val agents: List<Agent<A, E>>?
 )
 
 data class AgentEnvironmentPair<A, E>(
@@ -44,9 +44,10 @@ class MCCFramework<A, E>(
     suspend fun iterate(): Pair<List<Agent<A, E>>, List<SolvedEnvironment<E, A>>> = coroutineScope {
         // Generate a new batch of mutated agents and environments
         val agentBatch = agentQueuePopulation.selectBatchForMutation()
-        val newAgents = agentBatch.asyncMapAndJoin(dispatcher) { it.mutate(agentBatch) }
+        val newAgents = agentBatch.map { it.mutate(agentBatch) }
         val environmentBatch = environmentQueuePopulation.selectBatchForMutation()
-        val newEnvironments = environmentBatch.asyncMapAndJoin(dispatcher) { it.mutate(environmentBatch) }
+        
+        val newEnvironments = environmentBatch.map { it.mutate(environmentBatch) }
 
         // Filter for environments with available resources
         val availableEnvironments =

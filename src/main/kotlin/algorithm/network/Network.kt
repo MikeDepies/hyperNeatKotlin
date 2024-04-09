@@ -142,7 +142,7 @@ class NetworkProcessorStateful(private val network: Network, val maxIterations: 
 
 class NetworkProcessorFactory(val networkBuilder: NetworkBuilder, val cyclic : Boolean, val maxIterations: Int = 10, val convergenceThreshold: Double = 0.01) {
     fun createProcessor(genome: NetworkGenome): NetworkProcessor {
-        return if (cyclic && NetworkCycleTester(networkBuilder.buildNetworkFromGenome(genome)).hasCyclicConnections()) {
+        return if (cyclic && NetworkGenomeTester().hasCyclicConnections(genome)) {
             NetworkProcessorStateful(networkBuilder.buildNetworkFromGenome(genome), maxIterations, convergenceThreshold)
         } else {
             NetworkProcessorSimple(networkBuilder.buildNetworkFromGenome(genome))

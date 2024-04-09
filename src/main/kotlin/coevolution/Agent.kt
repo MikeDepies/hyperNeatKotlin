@@ -1,5 +1,6 @@
 package coevolution
 
+import HyperNetworkBuilder
 import algorithm.GenomeMutator
 import algorithm.network.NetworkBuilder
 import algorithm.network.NetworkProcessorFactory
@@ -9,6 +10,7 @@ import algorithm.network.NetworkProcessor
 import environment.*
 import genome.NetworkGenome
 import kotlin.random.Random
+import HyperNEAT
 
 interface Agent<M, E> {
     fun mutate(potentialMates: List<Agent<M, E>>): Agent<M, E>
@@ -18,14 +20,14 @@ interface Agent<M, E> {
 
 class MazeSolverAgent(
     private val random: Random,
-    private val mazeAgentCache: MazeAgentCache,
+    private val mazeAgentCache: AgentCache<NetworkGenome, MazeGenome>,
     private val mazeEnvironmentCache: MazeEnvironmentCache,
     private val genome: NetworkGenome,
     private val genomeMutator: GenomeMutator,
     private val solutionMap: SolutionMap<NetworkGenome, MazeGenome>,
     // val networkProcessorFactory: NetworkProcessorFactory,
     val stepsAllowed: Int,
-    val sensorPositions : List<Pair<Int,Int>>
+    val sensorPositions : List<Position>
 ) : Agent<NetworkGenome, MazeGenome> {
     override fun mutate(potentialMates: List<Agent<NetworkGenome, MazeGenome>>): Agent<NetworkGenome, MazeGenome> {
         
@@ -62,7 +64,7 @@ data class MazeSolutionAttempt(
 )
 
 class MazeSolverTester(
-    private val mazeAgentCache: MazeAgentCache,
+    private val mazeAgentCache: AgentCache<NetworkGenome, MazeGenome>,
     // private val networkProcessorFactory: NetworkProcessorFactory,
     private val sensorInputGenerator: SensorInputGenerator,
     private val environment: TmazeEnvironment,
@@ -95,21 +97,41 @@ class MazeSolverTester(
     }
 }
 
-
+interface AgentCache<M, E> {
+    fun getNetworkProcessor(networkGenome: M): NetworkProcessor
+    fun clearCache()
+}
 class MazeAgentCache(
     private val networkProcessorFactory: NetworkProcessorFactory,
     
-) {
+) : AgentCache<NetworkGenome, MazeGenome> {
     private val cache: MutableMap<NetworkGenome, NetworkProcessor> = mutableMapOf()
 
-    fun getNetworkProcessor(networkGenome: NetworkGenome): NetworkProcessor {
+    override fun getNetworkProcessor(networkGenome: NetworkGenome): NetworkProcessor {
         return cache.getOrPut(networkGenome) {
             val networkProcessor = networkProcessorFactory.createProcessor(networkGenome)
             networkProcessor
         }
     }
 
-    fun clearCache() {
+    override fun clearCache() {
+        cache.clear()
+    }
+}
+
+
+class HyperNEATAgentCache(
+    private val networkProcessorFactory: NetworkProcessorFactory,
+    private val hyperNEAT: HyperNEAT
+) : AgentCache<NetworkGenome, MazeGenome> {
+    private val cache: MutableMap<NetworkGenome, NetworkProcessor> = mutableMapOf()
+    override fun getNetworkProcessor(networkGenome: NetworkGenome): NetworkProcessor {
+        return cache.getOrPut(networkGenome) {
+            HyperNetworkBuilder(networkProcessorFactory, .5, 3.0, listOf(0.0,0.0,-2.0)).buildHyperNeatNetwork(hyperNEAT, networkGenome)
+        }
+    }
+
+    override fun clearCache() {
         cache.clear()
     }
 }

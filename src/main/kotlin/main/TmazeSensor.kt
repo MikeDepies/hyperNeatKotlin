@@ -8,11 +8,7 @@ import algorithm.evolve.*
 import algorithm.fitnessevaluator.MazeFitnessEvaluatorSensor
 import algorithm.fitnessevaluator.SensorInputGenerator
 import algorithm.weight.GaussianRandomWeight
-import environment.RewardSide
-import environment.TmazeEnvironment
-import environment.createTMaze
-import environment.hasPathToGoal
-import environment.renderEnvironmentAsString
+import environment.*
 import genome.ActivationFunction
 import genome.NetworkGenome
 import kotlin.collections.listOf
@@ -20,14 +16,14 @@ import kotlin.random.Random
 
 private fun createCoefficients() = Coefficients(1.0, 1.0, 0.4)
 
-private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorConfig {
+private fun createMutationOperations(geneticOperators: GeneticOperators, random: Random): GenomeMutatorOperationConfig {
     return fromList(listOf(
              MutationOperation(0.04, geneticOperators.mutateAddConnection),
              MutationOperation(0.01, geneticOperators.mutateAddNode),
              MutationOperation(0.9, geneticOperators.mutateWeights),
             MutationOperation(0.00, geneticOperators.mutateActivationFunction),
             // MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-    ), CrossOverOperation(geneticOperators.crossMutation), random)
+    ), CrossOverOperation(geneticOperators.crossMutation, .7), random)
 }
 
 fun main() {
@@ -70,7 +66,7 @@ fun main() {
                         val environment = TmazeEnvironment(task, task.width, task.height)
                         val f =
                                 MazeFitnessEvaluatorSensor(
-                                        SensorInputGenerator(environment, listOf(Pair(-1,0),Pair(1,0),Pair(0,1),Pair(0,-1))),
+                                        SensorInputGenerator(environment, listOf(Position(-1,0),Position(1,0),Position(0,1),Position(0,-1))),
                                         environment
                                 )
                         totalFitness += f.calculateFitness(genome)
@@ -83,12 +79,12 @@ fun main() {
     val geneticOperators =
             createDefaultGeneticOperators(
                     crossMutation,
-                    listOf(ActivationFunction.SIGMOID),
                     random,
                     nodeInnovationTracker,
                     connectionInnovationTracker,
                     SingleActivationFunctionSelection(ActivationFunction.SIGMOID),
-                    weightMutationConfig
+                    weightMutationConfig,
+                    false, false, false, false
             )
     val genomeMutator = DefaultGenomeMutator(createMutationOperations(geneticOperators, random))
 

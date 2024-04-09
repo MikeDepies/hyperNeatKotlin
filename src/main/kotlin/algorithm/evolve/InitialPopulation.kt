@@ -91,6 +91,8 @@ class SimpleInitialPopulationGenerator(
             }
         }
 
-        return NetworkGenome(nodes, connections)
+        return NetworkGenome(nodes, connections).also {
+            println("${connections.last()}")
+        }
     }
 }

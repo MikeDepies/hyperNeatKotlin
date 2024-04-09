@@ -11,6 +11,7 @@ import genome.ActivationFunction
 import kotlin.random.Random
 
 data class GeneticOperators(
+    val randomWeight: RandomWeight,
     val crossMutation: CrossMutation,
     val mutateAddNode: MutateAddNodeOperator,
     val mutateAddConnection: MutateAddConnectionOperator,
@@ -25,18 +26,18 @@ data class WeightMutationConfig(
 )
 fun createDefaultGeneticOperators(
     crossMutation: CrossMutation,
-
     random: Random,
     nodeInnovationTracker: InnovationTracker,
     connectionInnovationTracker: InnovationTracker,
     activationSelection: ActivationFunctionSelection,
     weightMutationConfig: WeightMutationConfig,
-    allowCyclicConnections: Boolean = false,
-    allowSelfConnections: Boolean = false,
-    allowOutputAsSource: Boolean = false,
-    allowInputAsTarget: Boolean = false,
+    allowCyclicConnections: Boolean,
+    allowSelfConnections: Boolean,
+    allowOutputAsSource: Boolean,
+    allowInputAsTarget: Boolean,
 ): GeneticOperators {
     return GeneticOperators(
+        weightMutationConfig.randomWeight,
         crossMutation,
         MutateAddNodeOperatorImpl(random, nodeInnovationTracker, connectionInnovationTracker, activationSelection, weightMutationConfig.randomWeight),
         MutateAddConnectionOperatorImpl(random, connectionInnovationTracker, weightMutationConfig.randomWeight, allowOutputAsSource, allowInputAsTarget, allowCyclicConnections, allowSelfConnections, ),

@@ -13,7 +13,7 @@ interface GenomeMutator {
 }
 
 data class MutationOperation(val probability: Double, val operation: GeneticOperator)
-data class CrossOverOperation(val operation: CrossMutation, val probability: Double = .7)
+data class CrossOverOperation(val operation: CrossMutation, val probability: Double )
 data class GenomeMutatorOperationConfig(
     val mutationOperations: List<MutationOperation>,
     val crossOverOperations: CrossOverOperation,
@@ -26,9 +26,9 @@ fun createMutationOperations(geneticOperators: GeneticOperators, random: Random)
             MutationOperation(0.04, geneticOperators.mutateAddConnection),
             MutationOperation(0.01, geneticOperators.mutateAddNode),
             MutationOperation(0.9, geneticOperators.mutateWeights),
-            MutationOperation(0.04, geneticOperators.mutateActivationFunction),
+//            MutationOperation(0.04, geneticOperators.mutateActivationFunction),
             MutationOperation(0.05, geneticOperators.mutateConnectionEnabled)
-        ), CrossOverOperation(geneticOperators.crossMutation), random
+        ), CrossOverOperation(geneticOperators.crossMutation, .1), random
     )
 }
 
@@ -42,17 +42,20 @@ class DefaultGenomeMutator(val config: GenomeMutatorOperationConfig) :
     override fun mutateGenome(genome: NetworkGenome): NetworkGenome {
         val mutatedGenome =
             config.mutationOperations.fold(genome) { currentGenome, mutationOperation ->
+
                 if (config.random.nextDouble() < mutationOperation.probability) {
+
                     val mutatedGenome = mutationOperation.operation.apply(currentGenome)
+
                     if (GenomeTestUtils.countGenomesWithOverlappingConnectionIds(listOf(mutatedGenome)) > 0) {
 
-                        println(mutationOperation)
-                        println(GenomeTestUtils.generateConflictedConnectionIds(listOf(mutatedGenome)))
-                        mutatedGenome.connectionGenes.forEach { connectionGene ->
-
-                            println(connectionGene)
-
-                        }
+//                        println(mutationOperation)
+//                        println(GenomeTestUtils.generateConflictedConnectionIds(listOf(mutatedGenome)))
+//                        mutatedGenome.connectionGenes.forEach { connectionGene ->
+//
+//                            println(connectionGene)
+//
+//                        }
                         throw RuntimeException("Mutated genome has overlapping connection ids")
                     }
                     mutatedGenome
