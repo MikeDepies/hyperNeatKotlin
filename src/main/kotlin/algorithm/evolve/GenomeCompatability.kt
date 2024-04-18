@@ -77,12 +77,13 @@ data class Coefficients(
         val excessCoefficient: Double,
         val disjointCoefficient: Double,
         val weightDiffCoefficient: Double,
+        val activationDiffCoefficient: Double // New coefficient for activation function differences
 )
 
 /* 
     Default coefficients for traditional NEAT
 */
-fun createDefaultCoefficients() = Coefficients(1.0, 1.0, 0.4)
+fun createDefaultCoefficients() = Coefficients(1.0, 1.0, 0.4, 0.3) // Adjusted to include activationDiffCoefficient
 
 class GenomeCompatibilityTraditional(private val coefficients: Coefficients, private val normalizationThreshold: Int = 20) : GenomeCompatibility {
 
@@ -90,13 +91,15 @@ class GenomeCompatibilityTraditional(private val coefficients: Coefficients, pri
         val excessGenes = calculateExcessGenes(genome1, genome2)
         val disjointGenes = calculateDisjointGenes(genome1, genome2)
         val averageWeightDiff = calculateAverageWeightDiff(genome1, genome2)
+        val activationFunctionDiff = calculateActivationFunctionDiff(genome1, genome2)
 
         val N = maxOf(genome1.connectionGenes.size, genome2.connectionGenes.size).toDouble()
-        val normalizationFactor = if (N < normalizationThreshold) 1.0 else N // Normalizing based on threshold
+        val normalizationFactor = if (N < normalizationThreshold) 1.0 else N
 
-        return (excessGenes * coefficients.excessCoefficient +
-                disjointGenes * coefficients.disjointCoefficient) / normalizationFactor +
-                averageWeightDiff * coefficients.weightDiffCoefficient
+        return ((excessGenes * coefficients.excessCoefficient +
+                disjointGenes * coefficients.disjointCoefficient +
+                activationFunctionDiff * coefficients.activationDiffCoefficient +
+                averageWeightDiff * coefficients.weightDiffCoefficient) / normalizationFactor)
     }
 
     private fun calculateExcessGenes(genome1: NetworkGenome, genome2: NetworkGenome): Int {
@@ -134,5 +137,19 @@ class GenomeCompatibilityTraditional(private val coefficients: Coefficients, pri
                 }
 
         return totalWeightDiff / matchingGenes.size
+    }
+    private fun calculateActivationFunctionDiff(genome1: NetworkGenome, genome2: NetworkGenome): Double {
+        val matchingNodes = genome1.nodeGenomes.filter { node1 ->
+            genome2.nodeGenomes.any { node2 -> node1.id == node2.id }
+        }
+
+        if (matchingNodes.isEmpty()) return 0.0
+
+        val totalActivationDiff = matchingNodes.sumOf { node1 ->
+            val node2 = genome2.nodeGenomes.find { it.id == node1.id }!!
+            if (node1.activationFunction == node2.activationFunction) 0.0 else 1.0
+        }
+
+        return totalActivationDiff / matchingNodes.size
     }
 }
